@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Eye, EyeOff, Mail, Phone, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Phone, Loader2, AlertCircle } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -24,6 +24,20 @@ const Login = () => {
     setLoading(true);
     setError('');
 
+    // Validate email format
+    if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email)) {
+      setError('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
+
+    // Validate password
+    if (!formData.password) {
+      setError('Please enter your password');
+      setLoading(false);
+      return;
+    }
+
     try {
       const result = await login(formData.email, null, formData.password);
       
@@ -32,7 +46,8 @@ const Login = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Login failed');
+      const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -91,6 +106,11 @@ const Login = () => {
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
+          </div>
+          <div className="flex justify-end mt-2">
+            <Link to="/forgot-password" className="text-sm text-primary-500 hover:text-primary-600 font-medium">
+              Forgot password?
+            </Link>
           </div>
         </div>
 

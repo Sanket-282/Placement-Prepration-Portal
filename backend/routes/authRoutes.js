@@ -7,7 +7,9 @@ const {
   login, 
   loginVerify, 
   getMe, 
-  updatePassword 
+  updatePassword,
+  forgotPassword,
+  verifyResetOTP
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
@@ -17,6 +19,8 @@ router.post('/verify-otp', verifyOTP);
 router.post('/resend-otp', resendOTP);
 router.post('/login', login);
 router.post('/login-verify', loginVerify);
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-reset-otp', verifyResetOTP);
 
 // Protected routes
 router.get('/me', protect, getMe);

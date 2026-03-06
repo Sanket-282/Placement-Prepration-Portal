@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { sendEmail, emailTemplates } = require('../utils/emailSender');
+const otpGenerator = require('otp-generator');
 
 // @desc    Register new user (Step 1 - initial registration)
 // @route   POST /api/auth/signup
@@ -379,6 +380,117 @@ exports.updatePassword = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating password',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Forgot Password - Send reset OTP
+// @route   POST /api/auth/forgot-password
+// @access  Public
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your email address'
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    // Don't reveal if user exists or not
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: 'If an account exists, a password reset OTP has been sent to your email'
+      });
+    }
+
+    // Generate reset OTP
+    const resetOTP = otpGenerator.generate(6, {
+      upperCase: true,
+      specialChars: false,
+      alphabets: true
+    });
+    
+    user.resetPasswordOTP = resetOTP.toUpperCase();
+    user.resetPasswordExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+    await user.save();
+
+    // Send reset OTP email
+    await sendEmail({
+      to: user.email,
+      subject: 'Password Reset OTP - Prep2Place',
+      message: emailTemplates.passwordResetOtp(user.name, resetOTP),
+      otp: resetOTP
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'If an account exists, a password reset OTP has been sent to your email',
+      userId: user._id
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing forgot password request',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Verify Reset OTP
+// @route   POST /api/auth/verify-reset-otp
+// @access  Public
+exports.verifyResetOTP = async (req, res) => {
+  try {
+    const { userId, otp, newPassword } = req.body;
+
+    if (!userId || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide userId, OTP and new password'
+      });
+    }
+
+    const user = await User.findById(userId).select('+resetPasswordOTP +resetPasswordExpiry');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify OTP
+    if (!user.resetPasswordOTP || 
+        user.resetPasswordOTP !== otp.toUpperCase() || 
+        user.resetPasswordExpiry < Date.now()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset OTP'
+      });
+    }
+
+    // Reset password
+    user.password = newPassword;
+    user.resetPasswordOTP = undefined;
+    user.resetPasswordExpiry = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully. Please login with your new password.'
+    });
+  } catch (error) {
+    console.error('Verify reset OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error resetting password',
       error: error.message
     });
   }

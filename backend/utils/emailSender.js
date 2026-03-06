@@ -174,6 +174,48 @@ const emailTemplates = {
       </body>
       </html>
     `;
+  },
+  
+  passwordResetOtp: (name, otp) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Reset OTP</title>
+        <style>
+          body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .card { background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          .logo { text-align: center; margin-bottom: 20px; }
+          .logo h1 { color: #6366F1; margin: 0; }
+          .otp-box { background: linear-gradient(135deg, #EF4444, #DC2626); color: white; padding: 20px; border-radius: 8px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; }
+          .warning { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="card">
+            <div class="logo">
+              <h1>Placement Portal</h1>
+            </div>
+            <h2>Hello ${name},</h2>
+            <p>We received a request to reset your password. Use the OTP below to reset your password:</p>
+            <div class="otp-box">${otp}</div>
+            <p>This OTP will expire in 10 minutes.</p>
+            <div class="warning">
+              <strong>Security Notice:</strong> If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} Placement Preparation Portal. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
   }
 };
 

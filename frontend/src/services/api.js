@@ -42,7 +42,9 @@ export const authAPI = {
   verifyOTP: (data) => api.post('/auth/verify-otp', data),
   resendOTP: (data) => api.post('/auth/resend-otp', data),
   getMe: () => api.get('/auth/me'),
-  updatePassword: (data) => api.put('/auth/update-password', data)
+  updatePassword: (data) => api.put('/auth/update-password', data),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  verifyResetOTP: (data) => api.post('/auth/verify-reset-otp', data)
 };
 
 // Questions API

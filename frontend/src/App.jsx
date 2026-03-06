@@ -10,6 +10,7 @@ import AuthLayout from './components/layouts/AuthLayout';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import VerifyOTP from './pages/auth/VerifyOTP';
+import ForgotPassword from './pages/auth/ForgotPassword';
 
 // Main Pages
 import Dashboard from './pages/Dashboard';
@@ -69,6 +70,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/verify-otp" element={<VerifyOTP />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
             </Route>
 
             {/* Protected Routes */}
