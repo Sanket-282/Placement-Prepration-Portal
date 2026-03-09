@@ -38,6 +38,13 @@ exports.protect = async (req, res, next) => {
       });
     }
 
+    if (req.user.status === 'blocked') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been blocked'
+      });
+    }
+
     next();
   } catch (error) {
     return res.status(401).json({
@@ -50,7 +57,7 @@ exports.protect = async (req, res, next) => {
 // Grant access to specific roles
 exports.authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.userType) && !req.user.isAdmin) {
+    if (!roles.includes(req.user.role) && !req.user.isAdmin) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this route'
@@ -62,10 +69,21 @@ exports.authorize = (...roles) => {
 
 // Check if user is admin
 exports.isAdmin = async (req, res, next) => {
-  if (!req.user.isAdmin) {
+  if (!req.user || (!req.user.isAdmin && req.user.role !== 'admin' && req.user.role !== 'superadmin')) {
     return res.status(403).json({
       success: false,
       message: 'Admin access required'
+    });
+  }
+  next();
+};
+
+// Check if user is superadmin
+exports.isSuperAdmin = async (req, res, next) => {
+  if (!req.user || req.user.role !== 'superadmin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Super admin access required'
     });
   }
   next();

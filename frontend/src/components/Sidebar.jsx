@@ -36,11 +36,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   ];
 
   const adminMenuItems = [
-    { path: '/admin', icon: BarChart3, label: 'Admin Dashboard' },
+    { path: '/admin', icon: BarChart3, label: 'Dashboard' },
     { path: '/admin/users', icon: User, label: 'Users' },
     { path: '/admin/questions', icon: Brain, label: 'Questions' },
-    { path: '/admin/coding-questions', icon: Code, label: 'Coding' },
-    { path: '/admin/analytics', icon: Settings, label: 'Analytics' }
+    { path: '/admin/coding-questions', icon: Code, label: 'Coding Questions' },
+    { path: '/admin/company-questions', icon: Building2, label: 'Company Questions' },
+    { path: '/admin/mock-tests', icon: FileText, label: 'Mock Tests' },
+    { path: '/admin/leaderboard', icon: Star, label: 'Leaderboard' },
+    { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
+    { path: '/admin/settings', icon: Settings, label: 'Settings' }
   ];
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');

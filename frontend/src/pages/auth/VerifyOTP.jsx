@@ -74,8 +74,13 @@ const VerifyOTP = () => {
     setError('');
 
     try {
-      await verifyOTP(userId, otpValue);
-      navigate('/dashboard');
+      const user = await verifyOTP(userId, otpValue);
+      // Redirect admin users to admin dashboard
+      if (user && user.isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Verification failed');
       setOtp(['', '', '', '', '', '']);

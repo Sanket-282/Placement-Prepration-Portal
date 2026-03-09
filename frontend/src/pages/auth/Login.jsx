@@ -43,7 +43,12 @@ const Login = () => {
       
       // Direct login - token is returned without OTP
       if (result.token) {
-        navigate('/dashboard');
+        // Redirect admin users to admin dashboard
+        if (result.user && result.user.isAdmin) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Login failed';

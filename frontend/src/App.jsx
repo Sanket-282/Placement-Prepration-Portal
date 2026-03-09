@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext';
 // Layouts
 import MainLayout from './components/layouts/MainLayout';
 import AuthLayout from './components/layouts/AuthLayout';
+import AdminLayout from './components/admin/AdminLayout';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -20,6 +21,17 @@ import Companies from './pages/companies/Companies';
 import MockTests from './pages/tests/MockTests';
 import Leaderboard from './pages/Leaderboard';
 import ResumeBuilder from './pages/ResumeBuilder';
+
+// Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminQuestions from './pages/admin/AdminQuestions';
+import AdminCodingQuestions from './pages/admin/AdminCodingQuestions';
+import AdminCompanyQuestions from './pages/admin/AdminCompanyQuestions';
+import AdminMockTests from './pages/admin/AdminMockTests';
+import AdminLeaderboard from './pages/admin/AdminLeaderboard';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminSettings from './pages/admin/AdminSettings';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -91,13 +103,17 @@ function App() {
               <Route path="/profile" element={<Dashboard />} />
             </Route>
 
-            {/* Admin Routes */}
-            <Route element={<AdminRoute><MainLayout /></AdminRoute>}>
-              <Route path="/admin" element={<Dashboard />} />
-              <Route path="/admin/users" element={<Dashboard />} />
-              <Route path="/admin/questions" element={<Dashboard />} />
-              <Route path="/admin/coding-questions" element={<Dashboard />} />
-              <Route path="/admin/analytics" element={<Dashboard />} />
+            {/* Admin Routes - Separate Admin Layout */}
+            <Route element={<AdminRoute><AdminLayout /></AdminRoute>}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/questions" element={<AdminQuestions />} />
+              <Route path="/admin/coding-questions" element={<AdminCodingQuestions />} />
+              <Route path="/admin/company-questions" element={<AdminCompanyQuestions />} />
+              <Route path="/admin/mock-tests" element={<AdminMockTests />} />
+              <Route path="/admin/leaderboard" element={<AdminLeaderboard />} />
+              <Route path="/admin/analytics" element={<AdminAnalytics />} />
+              <Route path="/admin/settings" element={<AdminSettings />} />
             </Route>
 
             {/* Default redirect */}

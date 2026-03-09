@@ -42,6 +42,20 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'superadmin'],
+    default: 'user'
+  },
+  status: {
+    type: String,
+    enum: ['active', 'blocked', 'suspended'],
+    default: 'active'
+  },
+  lastLogin: {
+    type: Date,
+    default: null
+  },
   score: {
     type: Number,
     default: 0
