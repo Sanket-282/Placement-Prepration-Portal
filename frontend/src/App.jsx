@@ -19,8 +19,12 @@ import Aptitude from './pages/aptitude/Aptitude';
 import Programming from './pages/programming/Programming';
 import Companies from './pages/companies/Companies';
 import MockTests from './pages/tests/MockTests';
+import TakeTest from './pages/tests/TakeTest';
 import Leaderboard from './pages/Leaderboard';
+import Bookmarks from './pages/Bookmarks';
+import Profile from './pages/Profile';
 import ResumeBuilder from './pages/ResumeBuilder';
+import DailyChallenge from './pages/DailyChallenge';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -95,12 +99,12 @@ function App() {
               <Route path="/companies" element={<Companies />} />
               <Route path="/companies/:name" element={<Companies />} />
               <Route path="/mock-tests" element={<MockTests />} />
-              <Route path="/mock-tests/:id" element={<MockTests />} />
-              <Route path="/daily-challenge" element={<MockTests />} />
+              <Route path="/mock-tests/:id" element={<TakeTest />} />
+              <Route path="/daily-challenge" element={<DailyChallenge />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/bookmarks" element={<Dashboard />} />
+              <Route path="/bookmarks" element={<Bookmarks />} />
               <Route path="/resume-builder" element={<ResumeBuilder />} />
-              <Route path="/profile" element={<Dashboard />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
 
             {/* Admin Routes - Separate Admin Layout */}

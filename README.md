@@ -1,47 +1,56 @@
 # Placement Preparation Portal
 
-A comprehensive full-stack web application for placement preparation, similar to platforms like placementpreparation.io. Users can practice aptitude questions, programming questions, company-specific interview questions, and take mock tests.
+A comprehensive full-stack web application for placement preparation, similar to platforms like placementpreparation.io. Users can practice aptitude questions, programming exercises, company-specific interview questions, and take mock tests.
+
+![React](https://img.shields.io/badge/React-18.2-blue)
+![Node.js](https://img.shields.io/badge/Node.js-18+-green)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-blue)
 
 ## 🚀 Features
 
 ### User Features
-- **User Authentication**: OTP-based registration and login (Email verification)
-- **Dashboard**: Personalized dashboard with stats and quick actions
-- **Aptitude Practice**: Quantitative, Logical Reasoning, Verbal Ability, and more
-- **Programming Section**: Code editor with Monaco Editor, supports JavaScript, Python, Java, C++, SQL
-- **Company Preparation**: TCS, Infosys, Wipro, Accenture, Capgemini, Amazon, Google, Microsoft
-- **Mock Tests**: Timed tests with multiple sections
-- **Daily Challenge**: Earn extra points daily
-- **Leaderboard**: Compete with other users
-- **Bookmarks**: Save questions for later
-- **Resume Builder**: Create and download professional resumes
+- **User Authentication**: OTP-based registration and login (Email)
+- **Aptitude Section**: Quantitative, Logical, Verbal Reasoning with multiple difficulty levels
+- **Programming Section**: Coding exercises with Monaco Editor (JavaScript, Python, Java, C++)
+- **Code Execution**: Integrated Judge0 API for code compilation and execution
+- **Company-Specific Preparation**: TCS, Infosys, Wipro, Accenture, Capgemini, Amazon, Google questions
+- **Daily Challenge**: One new coding problem every day with points
+- **Mock Tests**: Timed tests with automatic submission
+- **Leaderboard**: Top performers ranking system
+- **Bookmarks**: Save questions for later practice
+- **Resume Builder**: Create and download professional resumes as PDF
 
 ### Admin Features
-- User management
-- Question management (MCQs and Coding)
-- Mock test creation
-- Analytics dashboard
+- **Dashboard**: Overview of platform statistics
+- **User Management**: View, edit, delete users
+- **Question Management**: Add, edit, delete aptitude questions
+- **Coding Question Management**: Add, edit, delete coding problems
+- **Company Questions**: Manage company-specific questions
+- **Mock Test Creation**: Create and manage mock tests
+- **Analytics**: View platform usage statistics
+- **Leaderboard Management**: View and reset leaderboard
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- React.js 18+
-- Tailwind CSS
-- React Router v6
-- Axios
-- Monaco Editor
-- Lucide Icons
-- Recharts
+- **React.js 18** - UI Framework
+- **Tailwind CSS 3.4** - Styling
+- **React Router v6** - Navigation
+- **Axios** - HTTP Client
+- **Monaco Editor** - Code Editor
+- **Lucide React** - Icons
+- **Recharts** - Charts
 
 ### Backend
-- Node.js
-- Express.js
-- MongoDB (Atlas)
-- JWT Authentication
-- Nodemailer
+- **Node.js** - Runtime
+- **Express.js** - Web Framework
+- **MongoDB (Atlas)** - Database
+- **JWT** - Authentication
+- **Nodemailer** - Email Service
 
-### Compiler Integration
-- Judge0 API (RapidAPI)
+### External APIs
+- **Judge0 API** - Code Compilation & Execution
 
 ## 📁 Project Structure
 
@@ -49,18 +58,17 @@ A comprehensive full-stack web application for placement preparation, similar to
 placement-preparation-portal/
 ├── backend/
 │   ├── config/
-│   │   └── db.js
+│   │   └── db.js              # Database connection
 │   ├── controllers/
-│   │   ├── authController.js
+│   │   ├── authController.js  # Authentication logic
 │   │   ├── questionController.js
 │   │   ├── codingController.js
 │   │   ├── companyController.js
 │   │   ├── mockTestController.js
-│   │   ├── userController.js
-│   │   └── leaderboardController.js
+│   │   └── userController.js
 │   ├── middleware/
-│   │   ├── auth.js
-│   │   └── admin.js
+│   │   ├── auth.js            # JWT authentication
+│   │   └── admin.js           # Admin authorization
 │   ├── models/
 │   │   ├── User.js
 │   │   ├── Question.js
@@ -75,179 +83,232 @@ placement-preparation-portal/
 │   │   ├── companyRoutes.js
 │   │   ├── mockTestRoutes.js
 │   │   ├── userRoutes.js
-│   │   ├── adminRoutes.js
 │   │   └── leaderboardRoutes.js
 │   ├── utils/
-│   │   ├── emailSender.js
-│   │   └── otpGenerator.js
-│   ├── .env.example
-│   ├── package.json
-│   └── server.js
+│   │   └── emailSender.js     # Email utilities
+│   ├── server.js              # Entry point
+│   └── package.json
 │
 ├── frontend/
-│   ├── public/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── layouts/
-│   │   │   ├── Sidebar.jsx
-│   │   │   └── Header.jsx
+│   │   │   ├── layouts/       # Layout components
+│   │   │   └── admin/         # Admin components
 │   │   ├── pages/
-│   │   │   ├── auth/
-│   │   │   ├── aptitude/
-│   │   │   ├── programming/
-│   │   │   ├── companies/
-│   │   │   ├── tests/
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── Leaderboard.jsx
-│   │   │   └── ResumeBuilder.jsx
-│   │   ├── context/
-│   │   ├── services/
+│   │   │   ├── auth/         # Login, Signup, OTP
+│   │   │   ├── admin/        # Admin dashboard pages
+│   │   │   ├── aptitude/     # Aptitude questions
+│   │   │   ├── programming/  # Coding exercises
+│   │   │   ├── companies/    # Company questions
+│   │   │   └── tests/       # Mock tests
+│   │   ├── context/          # React contexts
+│   │   ├── services/         # API services
 │   │   ├── App.jsx
-│   │   ├── index.css
 │   │   └── main.jsx
-│   ├── .env.example
+│   ├── index.html
 │   ├── package.json
 │   ├── tailwind.config.js
-│   ├── postcss.config.js
 │   └── vite.config.js
 │
-├── SPEC.md
+├── SPEC.md                    # Technical specification
 └── README.md
 ```
 
-## 🏃‍♂️ Getting Started
+## 🏃‍♂️ Quick Start
 
 ### Prerequisites
-
 - Node.js 18+
-- MongoDB Atlas account
-- Judge0 API key (RapidAPI)
+- MongoDB Atlas Account
+- Judge0 API Key (RapidAPI)
 
-### Backend Setup
+### Installation
 
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd placement-preparation-portal
+```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+2. **Setup Backend**
+```bash
+cd backend
+npm install
 
-3. Create `.env` file:
-   ```bash
-   cp .env.example .env
-   ```
+# Create .env file
+cp .env.example .env
 
-4. Update `.env` with your values:
-   ```
-   PORT=5000
-   MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=your_email@gmail.com
-   SMTP_PASS=your_app_password
-   JUDGE0_API_KEY=your_judge0_api_key
-   FRONTEND_URL=http://localhost:5173
-   ```
+# Edit .env with your credentials
+# - MONGODB_URI: Your MongoDB Atlas connection string
+# - JWT_SECRET: Your secret key
+# - SMTP_* : Your email credentials
+# - JUDGE0_API_KEY: Your RapidAPI key
 
-5. Start the backend server:
-   ```bash
-   npm run dev
-   ```
+# Start backend server
+npm run dev
+```
 
-### Frontend Setup
+3. **Setup Frontend**
+```bash
+cd frontend
+npm install
 
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
+# Create .env file
+cp .env.example .env
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+# Start development server
+npm run dev
+```
 
-3. Create `.env` file:
-   ```bash
-   cp .env.example .env
-   ```
+4. **Access the Application**
+- Frontend: http://localhost:5173
+- Backend: http://localhost:5000
 
-4. Update `.env`:
-   ```
-   VITE_API_URL=http://localhost:5000/api
-   ```
+### Creating Admin User
 
-5. Start the development server:
-   ```bash
-   npm run dev
-   ```
+After starting the server, create an admin user by accessing:
+```
+POST /api/auth/create-admin
+{
+  "name": "Admin",
+  "email": "admin@example.com",
+  "password": "admin123",
+  "isAdmin": true
+}
+```
 
-6. Open your browser and visit: `http://localhost:5173`
+Or use the backend script:
+```bash
+cd backend
+node createAdmin.js
+```
 
-## 🔑 Default Admin Account
+## 📝 Environment Variables
 
-After setting up the database, you can create an admin user through:
-1. Register a new account through the signup page
-2. Manually update the user's `isAdmin` field to `true` in MongoDB
+### Backend (.env)
+```
+PORT=5000
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=your_secret_key
+JWT_EXPIRE=7d
 
-Or use the seed script to populate sample data.
+# Email (Nodemailer)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
+FROM_EMAIL=noreply@placementportal.com
+FROM_NAME=Placement Portal
 
-## 📝 API Endpoints
+# Judge0 API
+JUDGE0_API_KEY=your_rapidapi_key
+JUDGE0_API_HOST=judge0-ce.p.rapidapi.com
+
+FRONTEND_URL=http://localhost:5173
+```
+
+### Frontend (.env)
+```
+VITE_API_URL=http://localhost:5000/api
+```
+
+## 🔌 API Endpoints
 
 ### Authentication
-- `POST /api/auth/signup` - Register new user
-- `POST /api/auth/login` - Login (sends OTP)
+- `POST /api/auth/signup` - User registration
+- `POST /api/auth/login` - User login (sends OTP)
 - `POST /api/auth/verify-otp` - Verify OTP
-- `POST /api/auth/resend-otp` - Resend OTP
 - `GET /api/auth/me` - Get current user
 
 ### Questions
 - `GET /api/questions` - Get questions (with filters)
+- `GET /api/questions/random` - Get random questions
+- `POST /api/questions/:id/submit` - Submit answer
 - `POST /api/questions` - Add question (admin)
-- `PUT /api/questions/:id` - Update question (admin)
-- `DELETE /api/questions/:id` - Delete question (admin)
 
 ### Coding Questions
 - `GET /api/coding-questions` - Get coding questions
 - `POST /api/coding-questions/run` - Run code
 - `POST /api/coding-questions/submit` - Submit solution
-
-### Companies
-- `GET /api/companies` - Get all companies
-- `GET /api/companies/:name` - Get company questions
+- `GET /api/coding-questions/daily` - Get daily challenge
 
 ### Mock Tests
 - `GET /api/mock-tests` - Get all tests
+- `GET /api/mock-tests/:id` - Get test details
 - `POST /api/mock-tests/:id/submit` - Submit test
 
 ### User
 - `GET /api/user/profile` - Get profile
 - `PUT /api/user/profile` - Update profile
 - `GET /api/user/bookmarks` - Get bookmarks
-- `POST /api/user/bookmarks` - Add bookmark
+- `GET /api/user/stats` - Get user statistics
 
-### Leaderboard
-- `GET /api/leaderboard` - Get leaderboard
+### Admin
+- `GET /api/admin/users` - Get all users
+- `POST /api/admin/questions` - Add question
+- `GET /api/admin/analytics` - Get analytics
 
-## 🎨 UI Features
+## 📄 Available Scripts
 
-- Dark and Light mode support
-- Responsive design (mobile, tablet, desktop)
-- Interactive code editor
-- Real-time progress tracking
-- Professional dashboard layout
-- Smooth animations and transitions
+### Backend
+```bash
+npm run dev    # Start development server
+npm start      # Start production server
+```
+
+### Frontend
+```bash
+npm run dev    # Start development server
+npm run build  # Build for production
+npm run preview # Preview production build
+```
+
+## 🎨 UI/UX Features
+
+- **Dark/Light Mode**: Toggle between themes
+- **Responsive Design**: Works on mobile, tablet, and desktop
+- **Modern Dashboard**: Clean, professional interface
+- **Interactive Code Editor**: Monaco Editor with syntax highlighting
+- **Progress Tracking**: Visual charts and statistics
+
+## 🚢 Deployment
+
+### Frontend (Vercel)
+1. Push code to GitHub
+2. Import project in Vercel
+3. Configure environment variables
+4. Deploy
+
+### Backend (Render)
+1. Connect GitHub repository
+2. Set environment variables
+3. Deploy as Node.js service
+
+### Database (MongoDB Atlas)
+1. Create MongoDB Atlas account
+2. Create cluster
+3. Get connection string
+4. Add to backend .env
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is for educational purposes.
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- Design inspiration from placementpreparation.io
-- Monaco Editor by Microsoft
-- Judge0 for code execution
+- [Judge0 API](https://judge0.com/) for code execution
+- [Monaco Editor](https://microsoft.github.io/monaco-editor/) for code editing
+- [Tailwind CSS](https://tailwindcss.com/) for styling
+- [Lucide Icons](https://lucide.dev/) for icons
+
+---
+
+Made with ❤️ for placement preparation
 
