@@ -75,8 +75,13 @@ export const codingAPI = {
 export const companiesAPI = {
   getAll: () => api.get('/companies'),
   getOne: (name) => api.get(`/companies/${name}`),
+  getById: (id) => api.get(`/companies/id/${id}`),
   addCompany: (data) => api.post('/companies', data),
-  deleteCompany: (name) => api.delete(`/companies/${name}`)
+  deleteCompany: (name) => api.delete(`/companies/${name}`),
+  // Company questions
+  addQuestion: (companyId, data) => api.post(`/companies/${companyId}/questions`, data),
+  updateQuestion: (companyId, questionId, data) => api.put(`/companies/${companyId}/questions/${questionId}`, data),
+  deleteQuestion: (companyId, questionId) => api.delete(`/companies/${companyId}/questions/${questionId}`)
 };
 
 // Mock Tests API

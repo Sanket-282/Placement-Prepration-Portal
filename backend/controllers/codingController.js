@@ -182,7 +182,8 @@ exports.getDailyChallenge = async (req, res) => {
 // @access  Private
 exports.runCode = async (req, res) => {
   try {
-    const { language, sourceCode, input, questionId } = req.body;
+    // Accept both 'input' and 'stdin' from frontend
+    const { language, sourceCode, input, stdin, questionId } = req.body;
 
     if (!language || !sourceCode) {
       return res.status(400).json({
@@ -200,21 +201,47 @@ exports.runCode = async (req, res) => {
       });
     }
 
+    // Use whichever input is provided (stdin or input)
+    const codeInput = input || stdin || '';
+
     // Create submission on Judge0
     const createResponse = await judge0Request('/submissions?base64_encoded=true&wait=true', 'POST', {
       source_code: Buffer.from(sourceCode).toString('base64'),
       language_id: languageId,
-      stdin: input ? Buffer.from(input).toString('base64') : '',
+      stdin: codeInput ? Buffer.from(codeInput).toString('base64') : '',
       expected_output: null,
       cpu_time_limit: 2,
       memory_limit: 128000
     });
 
+    // Properly decode base64 responses
+    let stdout = '';
+    let stderr = '';
+    let compile_output = '';
+
+    try {
+      stdout = createResponse.stdout ? Buffer.from(createResponse.stdout, 'base64').toString('utf8') : '';
+    } catch (e) {
+      stdout = createResponse.stdout || '';
+    }
+
+    try {
+      stderr = createResponse.stderr ? Buffer.from(createResponse.stderr, 'base64').toString('utf8') : '';
+    } catch (e) {
+      stderr = createResponse.stderr || '';
+    }
+
+    try {
+      compile_output = createResponse.compile_output ? Buffer.from(createResponse.compile_output, 'base64').toString('utf8') : '';
+    } catch (e) {
+      compile_output = createResponse.compile_output || '';
+    }
+
     res.status(200).json({
       success: true,
-      output: createResponse.stdout ? Buffer.from(createResponse.stdout, 'base64').toString() : '',
-      stderr: createResponse.stderr ? Buffer.from(createResponse.stderr, 'base64').toString() : '',
-      compile_output: createResponse.compile_output ? Buffer.from(createResponse.compile_output, 'base64').toString() : '',
+      output: stdout,
+      stderr: stderr,
+      compile_output: compile_output,
       status: createResponse.status,
       time: createResponse.time,
       memory: createResponse.memory

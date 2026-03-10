@@ -116,7 +116,24 @@ const DailyChallenge = () => {
       });
       
       if (response.data.success) {
-        setOutput(response.data.output || response.data.stderr || 'No output');
+        const { output, stderr, compile_output } = response.data;
+        
+        // Check for compile errors first
+        if (compile_output) {
+          setOutput(`Compilation Error:\n${compile_output}`);
+        }
+        // Check for runtime errors
+        else if (stderr) {
+          setOutput(`Error:\n${stderr}`);
+        }
+        // Check for successful output
+        else if (output) {
+          setOutput(output);
+        } else {
+          setOutput('No output');
+        }
+      } else {
+        setOutput(response.data.message || 'Error running code');
       }
     } catch (error) {
       setOutput(error.response?.data?.message || 'Error running code');

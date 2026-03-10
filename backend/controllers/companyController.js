@@ -7,36 +7,50 @@ const CodingQuestion = require('../models/CodingQuestion');
 // @access  Public
 exports.getCompanies = async (req, res) => {
   try {
+    // Get all companies from database
     const companies = await CompanyQuestion.find({}).sort({ company: 1 });
 
-    const companyList = [
-      { name: 'TCS', logo: '/companies/tcs.png', description: 'Tata Consultancy Services' },
-      { name: 'Infosys', logo: '/companies/infosys.png', description: 'Infosys Limited' },
-      { name: 'Wipro', logo: '/companies/wipro.png', description: 'Wipro Limited' },
-      { name: 'Accenture', logo: '/companies/accenture.png', description: 'Accenture plc' },
-      { name: 'Capgemini', logo: '/companies/capgemini.png', description: 'Capgemini SE' },
-      { name: 'Amazon', logo: '/companies/amazon.png', description: 'Amazon.com Inc.' },
-      { name: 'Google', logo: '/companies/google.png', description: 'Alphabet Inc.' },
-      { name: 'Microsoft', logo: '/companies/microsoft.png', description: 'Microsoft Corporation' },
-      { name: 'Meta', logo: '/companies/meta.png', description: 'Meta Platforms Inc.' },
-      { name: 'Apple', logo: '/companies/apple.png', description: 'Apple Inc.' },
-      { name: 'IBM', logo: '/companies/ibm.png', description: 'IBM Corporation' },
-      { name: 'Adobe', logo: '/companies/adobe.png', description: 'Adobe Inc.' },
-      { name: 'Oracle', logo: '/companies/oracle.png', description: 'Oracle Corporation' },
-      { name: 'Cognizant', logo: '/companies/cognizant.png', description: 'Cognizant' },
-      { name: 'Tech Mahindra', logo: '/companies/techmahindra.png', description: 'Tech Mahindra' }
+    // If there are companies in DB, return them with counts
+    if (companies.length > 0) {
+      const companiesWithCounts = companies.map(c => ({
+        _id: c._id,
+        name: c.company,
+        logo: c.logo,
+        description: c.description,
+        totalQuestions: c.totalQuestions || 0,
+        totalCoding: c.totalCoding || 0,
+        totalInterview: c.totalInterview || 0,
+        createdAt: c.createdAt
+      }));
+
+      return res.status(200).json({
+        success: true,
+        count: companiesWithCounts.length,
+        companies: companiesWithCounts
+      });
+    }
+
+    // Default company list if no companies in DB (for initial setup)
+    const defaultCompanyList = [
+      { name: 'TCS', logo: '', description: 'Tata Consultancy Services' },
+      { name: 'Infosys', logo: '', description: 'Infosys Limited' },
+      { name: 'Wipro', logo: '', description: 'Wipro Limited' },
+      { name: 'Accenture', logo: '', description: 'Accenture plc' },
+      { name: 'Capgemini', logo: '', description: 'Capgemini SE' },
+      { name: 'Amazon', logo: '', description: 'Amazon.com Inc.' },
+      { name: 'Google', logo: '', description: 'Alphabet Inc.' },
+      { name: 'Microsoft', logo: '', description: 'Microsoft Corporation' },
+      { name: 'Meta', logo: '', description: 'Meta Platforms Inc.' },
+      { name: 'Apple', logo: '', description: 'Apple Inc.' }
     ];
 
-    // Merge with database data
-    const companiesWithCounts = companyList.map(company => {
-      const dbCompany = companies.find(c => c.company === company.name);
-      return {
-        ...company,
-        totalQuestions: dbCompany ? dbCompany.totalQuestions : 0,
-        totalCoding: dbCompany ? dbCompany.totalCoding : 0,
-        totalInterview: dbCompany ? dbCompany.totalInterview : 0
-      };
-    });
+    // Return default list with zero counts
+    const companiesWithCounts = defaultCompanyList.map(company => ({
+      ...company,
+      totalQuestions: 0,
+      totalCoding: 0,
+      totalInterview: 0
+    }));
 
     res.status(200).json({
       success: true,
@@ -183,6 +197,182 @@ exports.deleteCompany = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error deleting company',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get company by ID
+// @route   GET /api/companies/id/:id
+// @access  Public
+exports.getCompanyById = async (req, res) => {
+  try {
+    const company = await CompanyQuestion.findById(req.params.id);
+
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        message: 'Company not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      company
+    });
+  } catch (error) {
+    console.error('Get company by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching company',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Add question to company
+// @route   POST /api/companies/:id/questions
+// @access  Private (Admin)
+exports.addCompanyQuestion = async (req, res) => {
+  try {
+    const { question, options, answer, difficulty, type, topic } = req.body;
+
+    const company = await CompanyQuestion.findById(req.params.id);
+
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        message: 'Company not found'
+      });
+    }
+
+    // Add the new question
+    company.questions.push({
+      type: type || 'mcq',
+      question,
+      options: options || [],
+      answer,
+      difficulty: difficulty || 'medium',
+      topic
+    });
+
+    await company.save();
+
+    // Update counts
+    await CompanyQuestion.updateCounts(company.company);
+
+    res.status(201).json({
+      success: true,
+      message: 'Question added successfully',
+      question: company.questions[company.questions.length - 1]
+    });
+  } catch (error) {
+    console.error('Add company question error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding question',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Update company question
+// @route   PUT /api/companies/:id/questions/:questionId
+// @access  Private (Admin)
+exports.updateCompanyQuestion = async (req, res) => {
+  try {
+    const { question, options, answer, difficulty, type, topic } = req.body;
+
+    const company = await CompanyQuestion.findById(req.params.id);
+
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        message: 'Company not found'
+      });
+    }
+
+    const questionIndex = company.questions.findIndex(
+      q => q._id.toString() === req.params.questionId
+    );
+
+    if (questionIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Question not found'
+      });
+    }
+
+    // Update the question
+    if (question) company.questions[questionIndex].question = question;
+    if (options) company.questions[questionIndex].options = options;
+    if (answer !== undefined) company.questions[questionIndex].answer = answer;
+    if (difficulty) company.questions[questionIndex].difficulty = difficulty;
+    if (type) company.questions[questionIndex].type = type;
+    if (topic) company.questions[questionIndex].topic = topic;
+
+    await company.save();
+
+    // Update counts
+    await CompanyQuestion.updateCounts(company.company);
+
+    res.status(200).json({
+      success: true,
+      message: 'Question updated successfully',
+      question: company.questions[questionIndex]
+    });
+  } catch (error) {
+    console.error('Update company question error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating question',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Delete company question
+// @route   DELETE /api/companies/:id/questions/:questionId
+// @access  Private (Admin)
+exports.deleteCompanyQuestion = async (req, res) => {
+  try {
+    const company = await CompanyQuestion.findById(req.params.id);
+
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        message: 'Company not found'
+      });
+    }
+
+    const questionIndex = company.questions.findIndex(
+      q => q._id.toString() === req.params.questionId
+    );
+
+    if (questionIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Question not found'
+      });
+    }
+
+    // Remove the question
+    company.questions.splice(questionIndex, 1);
+
+    await company.save();
+
+    // Update counts
+    await CompanyQuestion.updateCounts(company.company);
+
+    res.status(200).json({
+      success: true,
+      message: 'Question deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete company question error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting question',
       error: error.message
     });
   }
