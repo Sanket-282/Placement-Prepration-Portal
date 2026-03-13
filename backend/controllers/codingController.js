@@ -214,7 +214,7 @@ exports.runCode = async (req, res) => {
       memory_limit: 128000
     });
 
-    // Properly decode base64 responses
+    // Properly decode base64 responses - handle null/undefined
     let stdout = '';
     let stderr = '';
     let compile_output = '';
@@ -237,12 +237,42 @@ exports.runCode = async (req, res) => {
       compile_output = createResponse.compile_output || '';
     }
 
+    // Determine the final output to return
+    let finalOutput = '';
+    let outputType = 'stdout';
+
+    // Priority: compile_output > stderr > stdout
+    if (compile_output && compile_output.trim()) {
+      finalOutput = compile_output;
+      outputType = 'compile_output';
+    } else if (stderr && stderr.trim()) {
+      finalOutput = stderr;
+      outputType = 'stderr';
+    } else if (stdout !== null && stdout !== undefined) {
+      finalOutput = stdout;
+      outputType = 'stdout';
+    }
+
+    // If no output at all, provide a helpful message
+    if (!finalOutput || !finalOutput.trim()) {
+      // Check the status - if it's "Accepted" but no output, code might just not print anything
+      const statusDesc = createResponse.status?.description || '';
+      if (statusDesc.toLowerCase().includes('accepted')) {
+        finalOutput = 'Code executed successfully (no output)';
+      } else {
+        finalOutput = 'No output';
+      }
+    }
+
     res.status(200).json({
       success: true,
-      output: stdout,
+      output: finalOutput,
+      stdout: stdout,
       stderr: stderr,
       compile_output: compile_output,
+      outputType: outputType,
       status: createResponse.status,
+      statusDescription: createResponse.status?.description,
       time: createResponse.time,
       memory: createResponse.memory
     });

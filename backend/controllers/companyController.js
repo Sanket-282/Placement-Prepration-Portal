@@ -30,32 +30,11 @@ exports.getCompanies = async (req, res) => {
       });
     }
 
-    // Default company list if no companies in DB (for initial setup)
-    const defaultCompanyList = [
-      { name: 'TCS', logo: '', description: 'Tata Consultancy Services' },
-      { name: 'Infosys', logo: '', description: 'Infosys Limited' },
-      { name: 'Wipro', logo: '', description: 'Wipro Limited' },
-      { name: 'Accenture', logo: '', description: 'Accenture plc' },
-      { name: 'Capgemini', logo: '', description: 'Capgemini SE' },
-      { name: 'Amazon', logo: '', description: 'Amazon.com Inc.' },
-      { name: 'Google', logo: '', description: 'Alphabet Inc.' },
-      { name: 'Microsoft', logo: '', description: 'Microsoft Corporation' },
-      { name: 'Meta', logo: '', description: 'Meta Platforms Inc.' },
-      { name: 'Apple', logo: '', description: 'Apple Inc.' }
-    ];
-
-    // Return default list with zero counts
-    const companiesWithCounts = defaultCompanyList.map(company => ({
-      ...company,
-      totalQuestions: 0,
-      totalCoding: 0,
-      totalInterview: 0
-    }));
-
+    // Return empty array if no companies in DB - user needs to add via admin
     res.status(200).json({
       success: true,
-      count: companiesWithCounts.length,
-      companies: companiesWithCounts
+      count: 0,
+      companies: []
     });
   } catch (error) {
     console.error('Get companies error:', error);

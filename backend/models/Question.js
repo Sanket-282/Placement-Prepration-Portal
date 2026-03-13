@@ -1,25 +1,48 @@
 const mongoose = require('mongoose');
 
+// All valid aptitude categories and topics
+const aptitudeCategories = [
+  'quantitative',
+  'verbal-ability',
+  'logical-reasoning',
+  'verbal-reasoning',
+  'non-verbal-reasoning',
+  'data-interpretation'
+];
+
 const questionSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'Please specify category'],
-    enum: ['aptitude', 'programming', 'reasoning', 'verbal']
+    enum: {
+      values: ['aptitude', 'programming', 'reasoning', 'verbal', ...aptitudeCategories],
+      message: 'Invalid category'
+    }
   },
   subcategory: {
     type: String,
     required: [true, 'Please specify subcategory'],
-    enum: [
-      'quantitative',
-      'data-interpretation',
-      'logical-reasoning',
-      'verbal-reasoning',
-      'non-verbal-reasoning',
-      'verbal-ability',
-      'technical-mcq',
-      'dsa',
-      'interview'
-    ]
+    enum: {
+      values: [
+        'quantitative',
+        'data-interpretation',
+        'logical-reasoning',
+        'verbal-reasoning',
+        'non-verbal-reasoning',
+        'verbal-ability',
+        'technical-mcq',
+        'dsa',
+        'interview',
+        'aptitude'
+      ],
+      message: 'Invalid subcategory'
+    }
+  },
+  // Topic field for aptitude questions (e.g., "time-and-work", "percentage", etc.)
+  topic: {
+    type: String,
+    default: null,
+    index: true
   },
   question: {
     type: String,
@@ -30,16 +53,15 @@ const questionSchema = new mongoose.Schema({
     required: [true, 'Please provide options'],
     validate: {
       validator: function(v) {
-        return v.length === 4;
+        return v.length >= 2 && v.length <= 6;
       },
-      message: 'Please provide exactly 4 options'
+      message: 'Please provide 2-6 options'
     }
   },
   answer: {
     type: Number,
     required: [true, 'Please specify correct answer index'],
-    min: 0,
-    max: 3
+    min: 0
   },
   explanation: {
     type: String,
@@ -71,8 +93,9 @@ const questionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient querying
-questionSchema.index({ category: 1, subcategory: 1, difficulty: 1 });
+// Compound indexes for efficient querying
+questionSchema.index({ category: 1, subcategory: 1, topic: 1, difficulty: 1 });
+questionSchema.index({ topic: 1 });
+questionSchema.index({ category: 1, topic: 1 });
 
 module.exports = mongoose.model('Question', questionSchema);
-

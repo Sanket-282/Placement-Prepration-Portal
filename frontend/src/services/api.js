@@ -84,6 +84,27 @@ export const companiesAPI = {
   deleteQuestion: (companyId, questionId) => api.delete(`/companies/${companyId}/questions/${questionId}`)
 };
 
+// Aptitude API
+export const aptitudeAPI = {
+  // Categories
+  getCategories: () => api.get('/aptitude/categories'),
+  
+  // Topics
+  getTopics: (params) => api.get('/aptitude/topics', { params }),
+  getTopicsWithCounts: (params) => api.get('/aptitude/topics-with-counts', { params }),
+  
+  // Questions
+  getQuestions: (params) => api.get('/aptitude/questions', { params })
+};
+
+// Admin Aptitude API
+export const adminAptitudeAPI = {
+  getQuestions: (params) => api.get('/aptitude/admin/questions', { params }),
+  addQuestion: (data) => api.post('/aptitude/admin/question', data),
+  updateQuestion: (id, data) => api.put(`/aptitude/admin/question/${id}`, data),
+  deleteQuestion: (id) => api.delete(`/aptitude/admin/question/${id}`)
+};
+
 // Mock Tests API
 export const mockTestsAPI = {
   getAll: (params) => api.get('/mock-tests', { params }),
@@ -170,4 +191,3 @@ export const adminAPI = {
 };
 
 export default api;
-

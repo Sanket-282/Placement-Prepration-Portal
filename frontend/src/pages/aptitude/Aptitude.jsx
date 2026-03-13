@@ -1,67 +1,127 @@
+
+
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { questionsAPI, userAPI } from '../../services/api';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { aptitudeAPI, questionsAPI, userAPI } from '../../services/api';
 import {
   Brain,
   ChevronRight,
   CheckCircle,
   XCircle,
   Bookmark,
-  BookmarkCheck,
   Loader2,
   ArrowLeft,
-  Target,
   Zap,
-  Clock,
-  Award,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Search,
+  BookOpen,
+  Calculator,
+  MessageSquare,
+  BarChart3,
+  Lightbulb,
+  Eye
 } from 'lucide-react';
 
-const categories = [
-  { id: 'quantitative', name: 'Quantitative Aptitude', icon: Brain, gradient: 'from-blue-500 to-cyan-500', shadow: 'shadow-blue-500/25' },
-  { id: 'data-interpretation', name: 'Data Interpretation', icon: Target, gradient: 'from-green-500 to-emerald-500', shadow: 'shadow-green-500/25' },
-  { id: 'logical-reasoning', name: 'Logical Reasoning', icon: Zap, gradient: 'from-purple-500 to-pink-500', shadow: 'shadow-purple-500/25' },
-  { id: 'verbal-reasoning', name: 'Verbal Reasoning', icon: Award, gradient: 'from-orange-500 to-amber-500', shadow: 'shadow-orange-500/25' },
-  { id: 'non-verbal-reasoning', name: 'Non-Verbal Reasoning', icon: Sparkles, gradient: 'from-pink-500 to-rose-500', shadow: 'shadow-pink-500/25' },
-  { id: 'verbal-ability', name: 'Verbal Ability', icon: Brain, gradient: 'from-cyan-500 to-blue-500', shadow: 'shadow-cyan-500/25' }
-];
+import { categoryConfig, aptitudeTopics, getTopicColor } from '../../data/aptitudeConfig';
+
 
 const Aptitude = () => {
-  const { category } = useParams();
+  const { category, topic } = useParams();
+  const navigate = useNavigate();
+  
+  const [view, setView] = useState('categories');
+  const [categories, setCategories] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
-  const [showCategory, setShowCategory] = useState(!category);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [topicCounts, setTopicCounts] = useState({});
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     if (category) {
-      fetchQuestions();
+      setSelectedCategory(category);
+      if (topic) {
+        setView('practice');
+        fetchQuestions();
+      } else {
+        setView('topics');
+        fetchTopics(category);
+      }
+    } else {
+      setView('categories');
     }
-  }, [category]);
+  }, [category, topic]);
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const response = await aptitudeAPI.getCategories();
+      if (response.data.success) {
+        setCategories(response.data.categories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories(Object.keys(categoryConfig).map(key => ({
+        id: key,
+        name: categoryConfig[key].name,
+        totalQuestions: 0
+      })));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTopics = async (cat) => {
+    setLoading(true);
+    try {
+      const response = await aptitudeAPI.getTopicsWithCounts({ category: cat });
+      if (response.data.success) {
+        setTopics(response.data.topics || []);
+        const counts = {};
+        (response.data.topics || []).forEach(t => {
+          counts[t.id] = t.totalQuestions || 0;
+        });
+        setTopicCounts(counts);
+      }
+    } catch (error) {
+      console.error('Error fetching topics:', error);
+      setTopics(aptitudeTopics[cat]?.map(t => ({ ...t, totalQuestions: 0 })) || []);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchQuestions = async () => {
     setLoading(true);
     try {
-      const response = await questionsAPI.getAll({
-        subcategory: category,
+      const response = await aptitudeAPI.getQuestions({
+        category,
+        topic,
         limit: 20
       });
       if (response.data.success) {
-        setQuestions(response.data.questions);
+        setQuestions(response.data.questions || []);
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
+      setQuestions([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleAnswer = async () => {
-    if (selectedAnswer === null) return;
+    if (selectedAnswer === null || !questions[currentQuestion]) return;
     setLoading(true);
     try {
       const response = await questionsAPI.submitAnswer(questions[currentQuestion]._id, {
@@ -73,6 +133,11 @@ const Aptitude = () => {
       }
     } catch (error) {
       console.error('Error submitting answer:', error);
+      setResult({
+        isCorrect: selectedAnswer === questions[currentQuestion].answer,
+        correctAnswer: questions[currentQuestion].answer
+      });
+      setSubmitted(true);
     } finally {
       setLoading(false);
     }
@@ -116,117 +181,193 @@ const Aptitude = () => {
     }
   };
 
-  if (showCategory || !category) {
+  // Categories View
+  if (view === 'categories') {
     return (
       <div className="space-y-6">
-        {/* Header */}
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg shadow-blue-500/30">
               <Brain className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
-              Aptitude Practice
-            </h1>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Aptitude Practice</h1>
           </div>
-          <p className="text-slate-500 dark:text-slate-400">
-            Choose a category to start practicing
-          </p>
+          <p className="text-slate-500 dark:text-slate-400">Choose a category to start practicing</p>
         </div>
 
-        {/* Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories.map((cat, index) => (
-            <Link
-              key={cat.id}
-              to={`/aptitude/${cat.id}`}
-              className="group card card-hover p-5"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${cat.gradient} ${cat.shadow} group-hover:scale-110 transition-transform duration-300`}>
-                  <cat.icon className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-slate-800 dark:text-white group-hover:text-primary-500 transition-colors">
-                    {cat.name}
-                  </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Practice questions
-                  </p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
-              </div>
-            </Link>
-          ))}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input type="text" placeholder="Search categories..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="form-input pl-12" />
         </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="card p-5 animate-pulse">
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2 mb-2"></div>
+                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categories.filter(cat => cat.name?.toLowerCase().includes(searchTerm.toLowerCase())).map((cat, index) => {
+              const config = categoryConfig[cat.id] || {};
+              const Icon = config.icon || Brain;
+              return (
+                <button key={cat.id} onClick={() => navigate(`/aptitude/${cat.id}`)} className="group card card-hover p-5 text-left" style={{ animationDelay: `${index * 50}ms` }}>
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-xl bg-gradient-to-br ${config.gradient || 'from-blue-500 to-cyan-500'} group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-slate-800 dark:text-white group-hover:text-primary-500 transition-colors">{cat.name}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{config.description || 'Practice questions'}</p>
+                      <span className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded mt-2 inline-block">{cat.totalQuestions || 0} Questions</span>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
 
+  // Topics View
+  if (view === 'topics') {
+    const filteredTopics = topics.filter(t => t.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+    const config = categoryConfig[selectedCategory] || {};
+    const Icon = config.icon || Brain;
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Link to="/aptitude" className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl bg-gradient-to-br ${config.gradient || 'from-blue-500 to-cyan-500'}`}>
+              <Icon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-800 dark:text-white">{config.name || 'Aptitude'}</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{filteredTopics.length} topics available</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input type="text" placeholder="Search topics..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="form-input pl-12" />
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="card p-5 animate-pulse">
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2 mb-2"></div>
+                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        ) : filteredTopics.length === 0 ? (
+          <div className="card p-12 text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <BookOpen className="w-10 h-10 text-slate-400" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">No topics available</h3>
+            <p className="text-slate-500 dark:text-slate-400">Topics will appear here once questions are added by admin.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredTopics.map((tp, index) => (
+              <button key={tp.id} onClick={() => navigate(`/aptitude/${selectedCategory}/${tp.id}`)} className="group card card-hover p-5 text-left" style={{ animationDelay: `${index * 30}ms` }}>
+                <div className="flex items-start gap-4">
+                  <div className={`p-3 rounded-xl bg-gradient-to-br ${getTopicColor(selectedCategory)} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <span className="text-white font-bold text-lg">{String(index + 1).padStart(2, '0')}</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-slate-800 dark:text-white group-hover:text-primary-500 transition-colors">{tp.name}</h3>
+                    <span className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded mt-2 inline-block">{topicCounts[tp.id] || 0} Questions</span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Practice View - Loading
   if (loading && questions.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-          <p className="text-slate-500 dark:text-slate-400">Loading questions...</p>
+          <p className="text-slate-500 dark:text-slate-400">Loading...</p>
         </div>
       </div>
     );
   }
 
+  // Practice View - No Questions
   if (questions.length === 0) {
+    const topicName = aptitudeTopics[category]?.find(t => t.id === topic)?.name || topic;
+
     return (
-      <div className="card p-12 text-center">
-        <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-          <Brain className="w-10 h-10 text-slate-400" />
-        </div>
-        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
-          No questions available
-        </h3>
-        <p className="text-slate-500 dark:text-slate-400 mb-6">
-          This category doesn't have any questions yet.
-        </p>
-        <Link
-          to="/aptitude"
-          className="btn btn-primary"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to categories
-        </Link>
-      </div>
-    );
-  }
-
-  const question = questions[currentQuestion];
-  const difficultyStyle = getDifficultyColor(question.difficulty);
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Link
-            to="/aptitude"
-            className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
+          <Link to={`/aptitude/${category}`} className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
           </Link>
           <div>
-            <h1 className="text-xl font-bold text-slate-800 dark:text-white">
-              {categories.find(c => c.id === category)?.name}
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Question {currentQuestion + 1} of {questions.length}
-            </p>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-white">{topicName}</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">No questions available for this topic</p>
+          </div>
+        </div>
+
+        <div className="card p-12 text-center">
+          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <BookOpen className="w-10 h-10 text-slate-400" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">No questions available</h3>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">There are no questions for this topic yet. Check back later!</p>
+          <Link to={`/aptitude/${category}`} className="btn btn-primary">
+            <ArrowLeft className="w-5 h-5" /> Back to topics
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Practice View - Questions
+  const question = questions[currentQuestion];
+  const difficultyStyle = getDifficultyColor(question.difficulty);
+  const currentTopicColor = getTopicColor(category);
+  const topicName = aptitudeTopics[category]?.find(t => t.id === topic)?.name || topic;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link to={`/aptitude/${category}`} className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+          </Link>
+          <div>
+            <div className="flex items-center gap-2">
+              <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${currentTopicColor} text-white text-xs font-medium`}>{topicName}</div>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Question {currentQuestion + 1} of {questions.length}</p>
           </div>
         </div>
         
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleBookmark}
-            className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
+          <button onClick={handleBookmark} className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Bookmark className="w-5 h-5 text-slate-400 hover:text-primary-500" />
           </button>
           <div className={`px-4 py-2 rounded-xl ${difficultyStyle.bg}`}>
@@ -238,125 +379,63 @@ const Aptitude = () => {
         </div>
       </div>
 
-      {/* Progress Bar */}
       <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full transition-all duration-500"
-          style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
-        />
+        <div className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full transition-all duration-500" style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }} />
       </div>
 
-      {/* Question Card */}
       <div className="card p-6 md:p-8">
-        <h2 className="text-lg md:text-xl font-medium text-slate-800 dark:text-white mb-8 leading-relaxed">
-          {question.question}
-        </h2>
+        <h2 className="text-lg md:text-xl font-medium text-slate-800 dark:text-white mb-8 leading-relaxed">{question.question}</h2>
 
         <div className="space-y-3">
           {question.options.map((option, index) => (
-            <button
-              key={index}
-              onClick={() => !submitted && setSelectedAnswer(index)}
-              disabled={submitted}
-              className={`quiz-option w-full ${submitted ? (
-                index === question.answer ? 'correct' : 
-                index === selectedAnswer ? 'incorrect' : ''
-              ) : ''}`}
-            >
+            <button key={index} onClick={() => !submitted && setSelectedAnswer(index)} disabled={submitted} className={`quiz-option w-full ${submitted ? (index === question.answer ? 'correct' : index === selectedAnswer ? 'incorrect' : '') : ''}`}>
               <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-colors ${
-                  submitted && index === question.answer ? 'bg-success-500 text-white' :
-                  submitted && index === selectedAnswer ? 'bg-danger-500 text-white' :
-                  selectedAnswer === index ? 'bg-primary-500 text-white' :
-                  'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                }`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-colors ${submitted && index === question.answer ? 'bg-success-500 text-white' : submitted && index === selectedAnswer && index !== question.answer ? 'bg-danger-500 text-white' : selectedAnswer === index ? 'bg-primary-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
                   {String.fromCharCode(65 + index)}
                 </div>
                 <span className="flex-1 text-left text-slate-700 dark:text-slate-200">{option}</span>
-                {submitted && index === question.answer && (
-                  <CheckCircle className="w-6 h-6 text-success-500" />
-                )}
-                {submitted && index === selectedAnswer && index !== question.answer && (
-                  <XCircle className="w-6 h-6 text-danger-500" />
-                )}
+                {submitted && index === question.answer && <CheckCircle className="w-6 h-6 text-success-500" />}
+                {submitted && index === selectedAnswer && index !== question.answer && <XCircle className="w-6 h-6 text-danger-500" />}
               </div>
             </button>
           ))}
         </div>
 
-        {/* Explanation */}
-        {submitted && result?.explanation && (
+        {submitted && (question.explanation || result?.explanation) && (
           <div className="mt-6 p-5 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-200 dark:border-primary-800">
             <h4 className="font-semibold text-primary-800 dark:text-primary-300 mb-2 flex items-center gap-2">
-              <Sparkles className="w-5 h-5" />
-              Explanation
+              <Sparkles className="w-5 h-5" /> Explanation
             </h4>
-            <p className="text-sm text-primary-700 dark:text-primary-400">{result.explanation}</p>
+            <p className="text-sm text-primary-700 dark:text-primary-400">{question.explanation || result?.explanation}</p>
           </div>
         )}
       </div>
 
-      {/* Actions */}
       <div className="flex items-center justify-between gap-4">
-        <button
-          onClick={handlePrevious}
-          disabled={currentQuestion === 0}
-          className="btn btn-secondary"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Previous
+        <button onClick={handlePrevious} disabled={currentQuestion === 0} className="btn btn-secondary">
+          <ArrowLeft className="w-5 h-5" /> Previous
         </button>
 
         {!submitted ? (
-          <button
-            onClick={handleAnswer}
-            disabled={selectedAnswer === null || loading}
-            className="btn btn-primary"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              <>
-                Submit Answer
-                <Zap className="w-5 h-5" />
-              </>
-            )}
+          <button onClick={handleAnswer} disabled={selectedAnswer === null || loading} className="btn btn-primary">
+            {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Submitting...</> : <><Zap className="w-5 h-5" /> Submit Answer</>}
           </button>
         ) : (
-          <button
-            onClick={handleNext}
-            disabled={currentQuestion === questions.length - 1}
-            className="btn btn-primary"
-          >
-            Next Question
-            <ArrowRight className="w-5 h-5" />
+          <button onClick={handleNext} disabled={currentQuestion === questions.length - 1} className="btn btn-primary">
+            Next Question <ArrowRight className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {/* Result Summary */}
-      {submitted && (
+      {submitted && result && (
         <div className="card p-6">
           <div className="flex items-center justify-center gap-8">
             <div className="text-center">
-              <div className={`w-16 h-16 mx-auto mb-3 rounded-2xl flex items-center justify-center ${
-                result?.isCorrect ? 'bg-success-100 dark:bg-success-900/30' : 'bg-danger-100 dark:bg-danger-900/30'
-              }`}>
-                {result?.isCorrect ? (
-                  <CheckCircle className="w-8 h-8 text-success-500" />
-                ) : (
-                  <XCircle className="w-8 h-8 text-danger-500" />
-                )}
+              <div className={`w-16 h-16 mx-auto mb-3 rounded-2xl flex items-center justify-center ${result?.isCorrect ? 'bg-success-100 dark:bg-success-900/30' : 'bg-danger-100 dark:bg-danger-900/30'}`}>
+                {result?.isCorrect ? <CheckCircle className="w-8 h-8 text-success-500" /> : <XCircle className="w-8 h-8 text-danger-500" />}
               </div>
-              <p className={`text-2xl font-bold ${result?.isCorrect ? 'text-success-500' : 'text-danger-500'}`}>
-                {result?.isCorrect ? 'Correct!' : 'Incorrect'}
-              </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                +{result?.score} points
-              </p>
+              <p className={`text-2xl font-bold ${result?.isCorrect ? 'text-success-500' : 'text-danger-500'}`}>{result?.isCorrect ? 'Correct!' : 'Incorrect'}</p>
+              {result?.score && <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">+{result.score} points</p>}
             </div>
           </div>
         </div>
@@ -366,4 +445,5 @@ const Aptitude = () => {
 };
 
 export default Aptitude;
+
 

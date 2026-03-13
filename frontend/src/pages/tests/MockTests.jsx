@@ -27,13 +27,16 @@ const MockTests = () => {
   const fetchTests = async () => {
     try {
       const response = await mockTestsAPI.getAll();
-      if (response.data.success) setTests(response.data.mockTests);
+      if (response.data.success) {
+        setTests(response.data.tests || []);
+      }
     } catch (error) {
       console.error('Error fetching tests:', error);
     } finally {
       setLoading(false);
     }
   };
+
 
   const filteredTests = tests.filter(test => {
     const matchesSearch = test.title.toLowerCase().includes(searchTerm.toLowerCase());

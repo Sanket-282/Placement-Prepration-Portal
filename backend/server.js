@@ -12,6 +12,7 @@ const mockTestRoutes = require('./routes/mockTestRoutes');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const leaderboardRoutes = require('./routes/leaderboardRoutes');
+const aptitudeRoutes = require('./routes/aptitudeRoutes');
 
 // Load env vars
 dotenv.config();
@@ -39,6 +40,7 @@ app.use('/api/mock-tests', mockTestRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/aptitude', aptitudeRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -116,10 +116,10 @@ const DailyChallenge = () => {
       });
       
       if (response.data.success) {
-        const { output, stderr, compile_output } = response.data;
+        const { output, stderr, compile_output, statusDescription } = response.data;
         
         // Check for compile errors first
-        if (compile_output) {
+        if (compile_output && compile_output.trim()) {
           setOutput(`Compilation Error:\n${compile_output}`);
         }
         // Check for runtime errors
@@ -130,7 +130,16 @@ const DailyChallenge = () => {
         else if (output) {
           setOutput(output);
         } else {
-          setOutput('No output');
+          // Check status description for better error message
+          if (statusDescription) {
+            if (statusDescription.toLowerCase().includes('accepted')) {
+              setOutput('Code executed successfully (no output produced)');
+            } else {
+              setOutput(`Status: ${statusDescription}`);
+            }
+          } else {
+            setOutput('No output');
+          }
         }
       } else {
         setOutput(response.data.message || 'Error running code');

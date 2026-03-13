@@ -516,7 +516,10 @@ router.get('/questions', async (req, res) => {
     if (subcategory) query.subcategory = subcategory;
     if (difficulty) query.difficulty = difficulty;
     if (search) {
-      query.question = { $regex: search, $options: 'i' };
+      query.$or = [
+        { question: { $regex: search, $options: 'i' } },
+        { topic: { $regex: search, $options: 'i' } }
+      ];
     }
 
     const questions = await Question.find(query)
@@ -542,9 +545,92 @@ router.get('/questions', async (req, res) => {
     });
   } catch (error) {
     console.error('Get questions error:', error);
+    console.error('Error details:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching questions',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Add new question (Admin)
+// @route   POST /api/admin/questions
+router.post('/questions', protect, isAdmin, async (req, res) => {
+  try {
+    const question = await Question.create(req.body);
+    res.status(201).json({
+      success: true,
+      message: 'Question created successfully',
+      question
+    });
+  } catch (error) {
+    console.error('Add question error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating question',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Update question (Admin)
+// @route   PUT /api/admin/questions/:id
+router.put('/questions/:id', protect, isAdmin, async (req, res) => {
+  try {
+    const question = await Question.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!question) {
+      return res.status(404).json({
+        success: false,
+        message: 'Question not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Question updated successfully',
+      question
+    });
+  } catch (error) {
+    console.error('Update question error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating question',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Delete question (Admin)
+// @route   DELETE /api/admin/questions/:id
+router.delete('/questions/:id', protect, isAdmin, async (req, res) => {
+  try {
+    const question = await Question.findByIdAndDelete(req.params.id);
+
+    if (!question) {
+      return res.status(404).json({
+        success: false,
+        message: 'Question not found'
+      });
+    }
+
+    // Delete related submissions
+    await Submission.deleteMany({ question: req.params.id });
+
+    res.status(200).json({
+      success: true,
+      message: 'Question deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete question error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting question',
       error: error.message
     });
   }

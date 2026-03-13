@@ -92,8 +92,9 @@ function App() {
             {/* Protected Routes */}
             <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/aptitude" element={<Aptitude />} />
+<Route path="/aptitude" element={<Aptitude />} />
               <Route path="/aptitude/:category" element={<Aptitude />} />
+              <Route path="/aptitude/:category/:topic" element={<Aptitude />} />
               <Route path="/programming" element={<Programming />} />
               <Route path="/programming/:type" element={<Programming />} />
               <Route path="/companies" element={<Companies />} />

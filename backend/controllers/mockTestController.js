@@ -330,3 +330,111 @@ exports.deleteMockTest = async (req, res) => {
   }
 };
 
+// @desc    Get user's mock test results
+// @route   GET /api/mock-tests/my-results
+// @access  Private
+exports.getMyTestResults = async (req, res) => {
+  try {
+    const submissions = await Submission.find({ 
+      user: req.user.id, 
+      type: 'mocktest' 
+    })
+    .populate('mockTest', 'title company duration totalMarks averageScore')
+    .populate('user', 'name')
+    .sort({ createdAt: -1 })
+    .limit(20);
+
+    const total = await Submission.countDocuments({ user: req.user.id, type: 'mocktest' });
+
+    res.status(200).json({
+      success: true,
+      count: submissions.length,
+      total,
+      results: submissions.map(s => ({
+        _id: s._id,
+        test: s.mockTest,
+        score: s.score,
+        maxScore: s.maxScore,
+        percentage: Math.round((s.score / s.maxScore) * 100),
+        timeTaken: s.timeTaken,
+        isPassed: s.isCorrect,
+        completedAt: s.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('Get my test results error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching results'
+    });
+  }
+};
+
+// @desc    Get specific test submissions (admin)
+// @route   GET /api/mock-tests/:testId/submissions
+// @access  Private Admin
+exports.getTestSubmissions = async (req, res) => {
+  try {
+    const test = await MockTest.findById(req.params.testId);
+    if (!test) {
+      return res.status(404).json({ success: false, message: 'Test not found' });
+    }
+
+    const submissions = await Submission.find({ mockTest: req.params.testId })
+      .populate('user', 'name email')
+      .populate('mockTest', 'title')
+      .sort({ score: -1, createdAt: -1 })
+      .limit(100);
+
+    res.status(200).json({
+      success: true,
+      test,
+      submissions: submissions.map(s => ({
+        user: s.user,
+        score: s.score,
+        percentage: Math.round((s.score / s.maxScore) * 100),
+        timeTaken: s.timeTaken,
+        submittedAt: s.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('Get test submissions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching submissions'
+    });
+  }
+};
+
+// @desc    Get specific test result
+// @route   GET /api/mock-tests/results/:submissionId
+// @access  Private
+exports.getTestResult = async (req, res) => {
+  try {
+    const submission = await Submission.findById(req.params.submissionId)
+      .populate('mockTest', 'title sections')
+      .populate('user', 'name');
+
+    if (!submission) {
+      return res.status(404).json({ success: false, message: 'Result not found' });
+    }
+
+    // Check ownership
+    if (submission.user._id.toString() !== req.user.id && !req.user.isAdmin) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    res.status(200).json({
+      success: true,
+      result: submission
+    });
+  } catch (error) {
+    console.error('Get test result error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching result'
+    });
+  }
+};
+
+

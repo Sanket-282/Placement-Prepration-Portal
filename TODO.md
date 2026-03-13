@@ -1,59 +1,62 @@
-# TODO - Placement Preparation Portal Fixes
+# Mock Test System Upgrade - TODO
 
-## ISSUE 1 - Company Questions Not Appearing in User Dashboard
+## Status: [IN PROGRESS] 
 
-### Backend Tasks:
-- [x] 1. Fix companyController.js - getCompanies() to return actual companies from database
-- [x] 2. Add new endpoints in companyRoutes.js for company questions management:
-  - GET /api/companies/id/:id - Get company by ID
-  - POST /api/companies/:id/questions - Add questions to company
-  - PUT /api/companies/:id/questions/:questionId - Update question
-  - DELETE /api/companies/:id/questions/:questionId - Delete question
+### Breakdown of approved plan:
 
-### Frontend Tasks:
-- [x] 3. Fix Companies.jsx - fetch companies from API instead of hardcoded list
-- [x] 4. Fix AdminCompanyQuestions.jsx - add question management (add/edit/delete questions)
+**✅ Step 0: Project Analysis Complete** - Files analyzed via search/read tools.
 
-## ISSUE 2 - Daily Quiz Compiler Output Always Shows "No Output"
+**✅ Step 1: Backend Enhancements** ✓
+- Added getMyTestResults, getTestSubmissions, getTestResult APIs
+- Updated mockTestController.js and routes/mockTestRoutes.js
 
-### Backend Tasks:
-- [x] 5. Fix codingController.js - handle both 'input' and 'stdin' fields correctly
+**✅ Step 2: Frontend API Services** ✓
+- mockTestsAPI and adminAPI already complete - no changes needed
 
-### Frontend Tasks:
-- [x] 6. Fix DailyChallenge.jsx - fix the output display logic to check stdout, stderr, and compile_output
 
-## Additional Fixes:
-- [x] 7. Update api.js - add company question API endpoints
+**✅ Step 4: TakeTest.jsx Full Integration** ✓
+- Added sections flattening with sectionName
+- Fixed answer key to question._id
+- Added localStorage persistence (24h)
+- Backend-only scoring/submit
+- Enhanced nav with scroll, section tooltip
+- Result page shows topic analysis from backend
+- Better UI for answered questions, selected options
 
-## Summary of Changes Made:
+**Step 5: MockTests.jsx Polish**
 
-### Backend:
-1. **companyController.js**:
-   - Modified `getCompanies()` to return companies from database first
-   - Added `getCompanyById()` function
-   - Added `addCompanyQuestion()`, `updateCompanyQuestion()`, `deleteCompanyQuestion()` functions
 
-2. **companyRoutes.js**:
-   - Added new routes for company question management
 
-3. **codingController.js**:
-   - Fixed `runCode()` to accept both 'input' and 'stdin' from frontend
-   - Improved base64 decoding with error handling
+**Step 3: Admin MockTests Enhancement**
+- [ ] Implement question selector (category/topic/diff)
+- [ ] Section builder form
+- [ ] Results viewer table
+- Update pages/admin/AdminMockTests.jsx
 
-### Frontend:
-1. **Companies.jsx**:
-   - Removed hardcoded company list
-   - Now fetches companies from API
-   - Added dynamic company colors
+**Step 4: TakeTest.jsx Full Integration**
+- [ ] Handle sections structure
+- [ ] Backend-only submit/scoring
+- [ ] Full results page (section analysis)
+- [ ] localStorage persistence
+- Update pages/tests/TakeTest.jsx
 
-2. **DailyChallenge.jsx**:
-   - Fixed output handling to check compile_output, stderr, and stdout in order
+**Step 5: MockTests.jsx Polish**
+- [ ] Show user previous attempts
+- [ ] Minor UI tweaks
 
-3. **api.js**:
-   - Added new company question API methods
+**Step 6: Leaderboard Integration**
+- [ ] Verify/add test-specific ranks if needed
+- Update pages/Leaderboard.jsx if necessary
 
-4. **AdminCompanyQuestions.jsx**:
-   - Added "Add Questions" button for each company
-   - Added modal for adding/editing/deleting questions
-   - Shows existing questions list
+**Step 7: Testing & Finalization**
+- [ ] Backend API test
+- [ ] Full user flow test
+- [ ] Responsive/mobile test
+- [ ] Error handling polish
 
+**Post-completion:**
+- Run `npm run dev` frontend/backend
+- Test complete flow
+- attempt_completion
+
+**Current Step: 1 - Backend controllers/mockTestController.js**

@@ -18,20 +18,53 @@ const TakeTest = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [test, setTest] = useState(null);
+  const [sections, setSections] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
+  const [totalTime, setTotalTime] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const [result, setResult] = useState(null);
+  const [previousAttempt, setPreviousAttempt] = useState(null);
+
+  // localStorage persistence
+  const storageKey = `mocktest-${id}`;
+
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.timestamp > Date.now() - 24*60*60*1000) { // 24h validity
+          setAnswers(data.answers || {});
+          setTimeLeft(data.timeLeft || totalTime);
+          setCurrentQuestion(data.currentQuestion || 0);
+        }
+      } catch (e) {
+        console.error('Invalid saved data');
+      }
+    }
+  }, [id, totalTime]);
+
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify({
+      answers,
+      timeLeft,
+      currentQuestion,
+      totalTime,
+      timestamp: Date.now()
+    }));
+  }, [answers, timeLeft, currentQuestion, totalTime, storageKey]);
 
   useEffect(() => {
     if (id) {
       fetchTest();
     }
   }, [id]);
+
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -46,9 +79,22 @@ const TakeTest = () => {
     try {
       const response = await mockTestsAPI.getOne(id);
       if (response.data.success) {
-        setTest(response.data.test);
-        setQuestions(response.data.questions);
-        setTimeLeft(response.data.test.duration * 60);
+        const dataTest = response.data.test;
+        setTest(dataTest);
+        setSections(dataTest.sections || []);
+        // Flatten questions with section info
+        const flatQuestions = dataTest.sections?.flatMap((section, secIdx) => 
+          section.questions.map(q => ({
+            ...q, 
+            sectionIndex: secIdx,
+            sectionName: section.name
+          }))
+        ) || [];
+        setQuestions(flatQuestions);
+        const totalSecs = dataTest.duration * 60;
+        setTotalTime(totalSecs);
+        setTimeLeft(totalSecs);
+        setPreviousAttempt(response.data.previousAttempt);
       }
     } catch (error) {
       console.error('Error fetching test:', error);
@@ -57,41 +103,36 @@ const TakeTest = () => {
     }
   };
 
-  const handleAnswerSelect = (questionIndex, answerIndex) => {
+
+  const handleAnswerSelect = (questionId, answerIndex) => {
     setAnswers(prev => ({
       ...prev,
-      [questionIndex]: answerIndex
+      [questionId]: answerIndex
     }));
   };
 
+  // Get section break points for nav coloring if needed
+  const getQuestionNavClass = (index) => {
+    const q = questions[index];
+    if (!q) return '';
+    const answered = answers[q._id] !== undefined;
+    return answered ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-600';
+  };
+
+
+
   const handleSubmit = async () => {
     setSubmitting(true);
+    localStorage.removeItem(storageKey); // Clear saved progress
     try {
-      // Calculate score
-      let correctAnswers = 0;
-      questions.forEach((q, index) => {
-        if (answers[index] === q.answer) {
-          correctAnswers++;
-        }
-      });
-
-      const score = Math.round((correctAnswers / questions.length) * 100);
-      const passed = score >= (test?.passingPercentage || 35);
-
+      const timeTaken = totalTime - timeLeft;
       const response = await mockTestsAPI.submitTest(id, {
         answers,
-        score,
-        timeTaken: (test.duration * 60) - timeLeft
+        timeTaken
       });
 
       if (response.data.success) {
-        setResult({
-          score,
-          correctAnswers,
-          totalQuestions: questions.length,
-          passed,
-          percentage: score
-        });
+        setResult(response.data.result);
       }
     } catch (error) {
       console.error('Error submitting test:', error);
@@ -99,6 +140,7 @@ const TakeTest = () => {
       setSubmitting(false);
     }
   };
+
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -164,20 +206,44 @@ const TakeTest = () => {
               : 'You need more practice to pass this test'}
           </p>
 
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
-              <p className="text-3xl font-bold text-primary-500">{result.percentage}%</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Score</p>
+          {result.sectionResults && result.sectionResults.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">Topic-wise Analysis</h3>
+              <div className="space-y-3">
+                {result.sectionResults.map((sec, idx) => (
+                  <div key={idx} className="card p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-slate-800 dark:text-white">{sec.sectionName}</span>
+                      <span className="font-bold text-lg text-primary-500">{sec.percentage}%</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                      <span>{sec.correct}/{sec.total} correct</span>
+                      <span>Score: {sec.score}/{sec.maxScore}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
-              <p className="text-3xl font-bold text-emerald-500">{result.correctAnswers}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Correct</p>
+          )}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-primary-500">{Math.round(result.percentage || 0)}%</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Overall</p>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
-              <p className="text-3xl font-bold text-slate-800 dark:text-white">{result.totalQuestions - result.correctAnswers}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Wrong</p>
+            <div className="bg-emerald-50 dark:bg-emerald-900/30 rounded-lg p-4 text-center">
+              <p className="text-xl font-bold text-emerald-600">{result.correctAnswers || 0}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Correct</p>
+            </div>
+            <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-4 text-center">
+              <p className="text-xl font-bold text-red-600">{result.totalQuestions - (result.correctAnswers || 0)}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Wrong</p>
+            </div>
+            <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-4 text-center">
+              <p className="text-sm font-bold text-amber-600">{formatTime(result.timeTaken || 0)}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Time Taken</p>
             </div>
           </div>
+
 
           <div className="flex gap-4 justify-center">
             <Link
@@ -247,17 +313,18 @@ const TakeTest = () => {
       </div>
 
       {/* Question Navigation */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {questions.map((_, index) => (
+      <div className="flex gap-2 mb-6 flex-wrap" style={{maxHeight: '200px', overflowY: 'auto'}}>
+        {questions.map((q, index) => (
           <button
-            key={index}
+            key={q._id}
             onClick={() => setCurrentQuestion(index)}
-            className={`w-10 h-10 rounded-lg font-medium text-sm transition-colors ${
+            title={`${q.sectionName || 'Main'} - Q${index+1}`}
+            className={`w-10 h-10 rounded-lg font-medium text-xs transition-all flex-shrink-0 ${
               currentQuestion === index
-                ? 'bg-primary-500 text-white'
-                : answers[index] !== undefined
-                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                ? 'bg-primary-500 text-white shadow-md ring-2 ring-primary-200 ring-opacity-50'
+                : answers[q._id] !== undefined
+                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-200'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 hover:shadow-sm border border-slate-200'
             }`}
           >
             {index + 1}
@@ -265,8 +332,14 @@ const TakeTest = () => {
         ))}
       </div>
 
+
       {/* Question */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 mb-6">
+        {question.sectionName && (
+          <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{question.sectionName}</span>
+          </div>
+        )}
         <div className="flex items-start justify-between mb-4">
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
             {question.difficulty}
@@ -277,24 +350,28 @@ const TakeTest = () => {
           {question.question}
         </h2>
 
+
         <div className="space-y-3">
           {question.options.map((option, index) => (
             <button
               key={index}
-              onClick={() => handleAnswerSelect(currentQuestion, index)}
+              onClick={() => handleAnswerSelect(question._id, index)}
               className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-                answers[currentQuestion] === index
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-slate-200 dark:border-slate-600 hover:border-primary-300'
+                answers[question._id] === index
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-md'
+                  : answers[question._id] !== undefined
+                  ? 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50'
+                  : 'border-slate-200 dark:border-slate-600 hover:border-primary-300 hover:bg-slate-50'
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm font-medium text-slate-600 dark:text-slate-300">
+                <span className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-slate-300 min-w-[2.125rem]">
                   {String.fromCharCode(65 + index)}
                 </span>
                 <span className="text-slate-700 dark:text-slate-200">{option}</span>
               </div>
             </button>
+
           ))}
         </div>
       </div>
