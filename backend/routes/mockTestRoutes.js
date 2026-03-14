@@ -25,14 +25,6 @@ router.post('/:id/submit', protect, submitMockTest);
 
 // Admin routes
 router.post('/', protect, isAdmin, createMockTest);
-router.put('/:id', protect, isAdmin, updateMockTest);
-router.delete('/:id', protect, isAdmin, deleteMockTest);
-
-// Results routes
-router.get('/my-results', protect, getMyTestResults);
-router.get('/results/:submissionId', protect, getTestResult);
-router.get('/:testId/submissions', protect, isAdmin, getTestSubmissions);
-
 
 module.exports = router;
 

@@ -84,14 +84,14 @@ const TakeTest = () => {
         setSections(dataTest.sections || []);
         // Flatten questions with section info
         const flatQuestions = dataTest.sections?.flatMap((section, secIdx) => 
-          section.questions.map(q => ({
+          section.questions?.map(q => ({
             ...q, 
             sectionIndex: secIdx,
-            sectionName: section.name
-          }))
+            sectionName: section.name || 'General'
+          })) || []
         ) || [];
         setQuestions(flatQuestions);
-        const totalSecs = dataTest.duration * 60;
+        const totalSecs = dataTest.duration * 60 || 3600;
         setTotalTime(totalSecs);
         setTimeLeft(totalSecs);
         setPreviousAttempt(response.data.previousAttempt);
@@ -102,6 +102,16 @@ const TakeTest = () => {
       setLoading(false);
     }
   };
+
+  // Keep currentQuestion in bounds
+  useEffect(() => {
+    if (questions.length === 0) {
+      setCurrentQuestion(0);
+    } else if (currentQuestion >= questions.length) {
+      setCurrentQuestion(questions.length - 1);
+    }
+  }, [questions.length, currentQuestion]);
+
 
 
   const handleAnswerSelect = (questionId, answerIndex) => {
@@ -271,27 +281,50 @@ const TakeTest = () => {
 
   const question = questions[currentQuestion];
 
+  if (!test || questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
+        <AlertCircle className="w-16 h-16 text-amber-500 mb-4 mx-auto" />
+        <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">
+          No questions available
+        </h3>
+        <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md">
+          This test has no questions. Please contact admin or try another test.
+        </p>
+        <Link
+          to="/mock-tests"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+          Back to Mock Tests
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
+
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 mb-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              to="/mock-tests"
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-            >
-              <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-            </Link>
-            <div>
-              <h1 className="font-semibold text-slate-800 dark:text-white">
-                {test.title}
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Question {currentQuestion + 1} of {questions.length}
-              </p>
-            </div>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/mock-tests"
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+          >
+            <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+          </Link>
+          <div>
+            <h1 className="font-semibold text-slate-800 dark:text-white">
+              {test.title}
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Question {currentQuestion + 1} of {questions.length} • {question?.sectionName || 'General'}
+            </p>
           </div>
+        </div>
+
 
           <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
             timeLeft < 300 ? 'bg-red-100 dark:bg-red-900/30 text-red-600' : 'bg-slate-100 dark:bg-slate-700'

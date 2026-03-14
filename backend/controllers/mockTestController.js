@@ -437,4 +437,65 @@ exports.getTestResult = async (req, res) => {
   }
 };
 
+// @desc    Toggle mock test status (Admin)
+// @route   POST /api/mock-tests/:id/toggle
+// @access  Private Admin
+exports.toggleMockTest = async (req, res) => {
+  try {
+    const test = await MockTest.findById(req.params.id);
+
+    if (!test) {
+      return res.status(404).json({ success: false, message: 'Test not found' });
+    }
+
+    test.isActive = !test.isActive;
+    await test.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Test ${test.isActive ? 'activated' : 'deactivated'} successfully`,
+      test: {
+        _id: test._id,
+        title: test.title,
+        isActive: test.isActive
+      }
+    });
+  } catch (error) {
+    console.error('Toggle mock test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error toggling test'
+    });
+  }
+};
+
+
+// @desc    Toggle mock test active status (Admin)
+// @route   POST /api/mock-tests/:id/toggle
+// @access  Private Admin
+exports.toggleMockTest = async (req, res) => {
+  try {
+    const test = await MockTest.findById(req.params.id);
+    if (!test) {
+      return res.status(404).json({ success: false, message: 'Test not found' });
+    }
+
+    test.isActive = !test.isActive;
+    await test.save();
+
+    res.status(200).json({
+      success: true,
+      test,
+      message: `Test ${test.isActive ? 'activated' : 'deactivated'}`
+    });
+  } catch (error) {
+    console.error('Toggle mock test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error toggling test status'
+    });
+  }
+};
+
+
 

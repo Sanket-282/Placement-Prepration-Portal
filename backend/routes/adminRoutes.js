@@ -505,15 +505,15 @@ router.get('/questions', async (req, res) => {
       page = 1, 
       limit = 20, 
       category, 
-      subcategory, 
+      topic, 
       difficulty,
       search 
     } = req.query;
 
-    let query = {};
+    let query = { isActive: true };
 
     if (category) query.category = category;
-    if (subcategory) query.subcategory = subcategory;
+    if (topic) query.topic = topic;
     if (difficulty) query.difficulty = difficulty;
     if (search) {
       query.$or = [
@@ -544,8 +544,7 @@ router.get('/questions', async (req, res) => {
       questions
     });
   } catch (error) {
-    console.error('Get questions error:', error);
-    console.error('Error details:', error);
+    console.error('Get admin questions error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching questions',
@@ -553,6 +552,7 @@ router.get('/questions', async (req, res) => {
     });
   }
 });
+
 
 // @desc    Add new question (Admin)
 // @route   POST /api/admin/questions
@@ -1010,155 +1010,26 @@ router.delete('/company-questions/:id', async (req, res) => {
 // ==================== MOCK TEST MANAGEMENT ====================
 
 // @desc    Get all mock tests (Admin)
-// @route   GET /api/admin/mock-tests
-router.get('/mock-tests', async (req, res) => {
-  try {
-    const { page = 1, limit = 20, category, isActive } = req.query;
+const { getMockTests, createMockTest, updateMockTest, deleteMockTest, toggleMockTest } = require('../controllers/mockTestController');
+router.get('/mock-tests', getMockTests);
 
-    let query = {};
-    if (category) query.category = category;
-    if (isActive !== undefined) query.isActive = isActive === 'true';
 
-    const tests = await MockTest.find(query)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .populate('createdBy', 'name email');
-
-    const total = await MockTest.countDocuments(query);
-
-    res.status(200).json({
-      success: true,
-      count: tests.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: parseInt(page),
-      tests
-    });
-  } catch (error) {
-    console.error('Get mock tests error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching mock tests',
-      error: error.message
-    });
-  }
-});
 
 // @desc    Add new mock test (Admin)
-// @route   POST /api/admin/mock-tests
-router.post('/mock-tests', async (req, res) => {
-  try {
-    req.body.createdBy = req.user._id;
-    const test = await MockTest.create(req.body);
+router.post('/mock-tests', createMockTest);
 
-    res.status(201).json({
-      success: true,
-      message: 'Mock test created successfully',
-      test
-    });
-  } catch (error) {
-    console.error('Add mock test error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error creating mock test',
-      error: error.message
-    });
-  }
-});
 
 // @desc    Update mock test (Admin)
-// @route   PUT /api/admin/mock-tests/:id
-router.put('/mock-tests/:id', async (req, res) => {
-  try {
-    const test = await MockTest.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+router.put('/mock-tests/:id', updateMockTest);
 
-    if (!test) {
-      return res.status(404).json({
-        success: false,
-        message: 'Mock test not found'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Mock test updated successfully',
-      test
-    });
-  } catch (error) {
-    console.error('Update mock test error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating mock test',
-      error: error.message
-    });
-  }
-});
 
 // @desc    Delete mock test (Admin)
-// @route   DELETE /api/admin/mock-tests/:id
-router.delete('/mock-tests/:id', async (req, res) => {
-  try {
-    const test = await MockTest.findByIdAndDelete(req.params.id);
+router.delete('/mock-tests/:id', deleteMockTest);
 
-    if (!test) {
-      return res.status(404).json({
-        success: false,
-        message: 'Mock test not found'
-      });
-    }
-
-    // Delete related submissions
-    await Submission.deleteMany({ mockTest: req.params.id });
-
-    res.status(200).json({
-      success: true,
-      message: 'Mock test deleted successfully'
-    });
-  } catch (error) {
-    console.error('Delete mock test error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting mock test',
-      error: error.message
-    });
-  }
-});
 
 // @desc    Toggle mock test status (Admin)
-// @route   POST /api/admin/mock-tests/:id/toggle
-router.post('/mock-tests/:id/toggle', async (req, res) => {
-  try {
-    const test = await MockTest.findById(req.params.id);
+router.post('/mock-tests/:id/toggle', toggleMockTest);
 
-    if (!test) {
-      return res.status(404).json({
-        success: false,
-        message: 'Mock test not found'
-      });
-    }
-
-    test.isActive = !test.isActive;
-    await test.save();
-
-    res.status(200).json({
-      success: true,
-      message: `Mock test ${test.isActive ? 'activated' : 'deactivated'} successfully`,
-      test
-    });
-  } catch (error) {
-    console.error('Toggle mock test error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error toggling mock test status',
-      error: error.message
-    });
-  }
-});
 
 // ==================== LEADERBOARD MANAGEMENT ====================
 

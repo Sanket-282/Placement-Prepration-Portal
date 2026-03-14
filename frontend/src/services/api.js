@@ -174,6 +174,9 @@ export const adminAPI = {
   updateMockTest: (id, data) => api.put(`/admin/mock-tests/${id}`, data),
   deleteMockTest: (id) => api.delete(`/admin/mock-tests/${id}`),
   toggleMockTest: (id) => api.post(`/admin/mock-tests/${id}/toggle`),
+
+  getTestSubmissions: (testId) => api.get(`/mock-tests/${testId}/submissions`),
+
   
   // Leaderboard
   getLeaderboard: (params) => api.get('/admin/leaderboard', { params }),
