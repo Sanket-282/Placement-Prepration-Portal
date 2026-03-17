@@ -34,8 +34,11 @@ app.use(cors({
 // Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/questions', questionRoutes);
+
+app.use('/api/programming', require('./routes/programmingRoutes'));
 app.use('/api/coding-questions', codingRoutes);
 app.use('/api/companies', companyRoutes);
+
 app.use('/api/mock-tests', mockTestRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);

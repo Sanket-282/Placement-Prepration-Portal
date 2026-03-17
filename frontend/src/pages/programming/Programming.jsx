@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
-import { codingAPI } from '../../services/api';
+
+import { programmingAPI } from '../../services/programmingAPI';
+
 import {
   Code,
   Play,

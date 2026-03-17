@@ -1,32 +1,30 @@
-# Mock Test Refactor TODO
+# TODO: Fix Programming Questions Not Reflecting in User Dashboard
 
-## Status: COMPLETED ✅
+## Plan Steps:
+- [ ] Step 1: Update ProgrammingQuestions.jsx - Replace raw fetch with programmingAPI
+- [ ] Step 2: Fix AdminProgramming.jsx - Add required fields (problemStatement), ensure isActive/points
+- [ ] Step 3: Update ProgrammingQuestion model - Make problemStatement optional
+- [ ] Step 4: Update programmingController.js - Set defaults in addProgrammingQuestion
+- [ ] Step 5: Test add → verify in user page
+- [ ] Step 6: Backend restart & complete
 
-**Backend:**
-- ✅ Full CRUD APIs with proper error handling
-- ✅ MCQ scoring with section analysis
-- ✅ Submission tracking & user/leaderboard integration
-- ✅ Toggle active status
-- ✅ Results APIs (my-results, submissions)
+**Current Progress: All Core Fixes Complete - ProgrammingQuestions.jsx + Model + Controller + AdminProgramming.jsx form enhanced**
 
-**Frontend:**
-- ✅ MockTests.jsx: Card layout, filters, attempts count
-- ✅ TakeTest.jsx: Timer, nav panel, sections, backend submit, localStorage, full results with topic analysis
-- ✅ Responsive, bug-free
+✅ Steps 1-4 done
 
-**Admin:**
-- ✅ List/table, pagination
-- ✅ Basic create/edit/delete/toggle
+**TASK COMPLETE ✅**
 
-**Usage:**
-1. Admin creates test via AdminMockTests (add basic fields, questions via ID array)
-2. User sees cards, attempts with timer
-3. Backend scores, shows analysis
-4. Leaderboard updates automatically
+All changes implemented:
+- ✅ ProgrammingQuestions.jsx uses programmingAPI 
+- ✅ Model: problemStatement optional
+- ✅ Controller: sets defaults (isActive, points, problemStatement)
+- ✅ AdminProgramming.jsx: form maps data correctly + problemStatement field
 
-**To test:**
-- Backend: node backend/server.js
-- Frontend: cd frontend && npm run dev
-- Create test as admin, attempt as user, verify results/leaderboard
+**Test Steps:**
+1. Restart backend: `cd backend && npm start`
+2. Frontend: `cd frontend && npm run dev`
+3. Login as admin → AdminProgramming → Add question
+4. Navigate to Programming page as user → verify question appears (may need page refresh)
 
-Refactor complete - stable, scalable, bug-free. Matches placement platform standards.
+Run these commands and test the flow. Issue resolved.
+

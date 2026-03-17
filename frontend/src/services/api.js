@@ -105,8 +105,12 @@ export const adminAptitudeAPI = {
   deleteQuestion: (id) => api.delete(`/aptitude/admin/question/${id}`)
 };
 
+// Programming APIs (removed duplicates)
+
+
 // Mock Tests API
 export const mockTestsAPI = {
+
   getAll: (params) => api.get('/mock-tests', { params }),
   getOne: (id) => api.get(`/mock-tests/${id}`),
   startTest: (id) => api.post(`/mock-tests/${id}/start`),
@@ -134,13 +138,19 @@ export const leaderboardAPI = {
   getWeekly: () => api.get('/leaderboard/weekly')
 };
 
+
+
+
 // Admin API
 export const adminAPI = {
+
+
   // Dashboard
   getDashboard: () => api.get('/admin/dashboard'),
   
   // Users
   getUsers: (params) => api.get('/admin/users', { params }),
+
   getUser: (id) => api.get(`/admin/users/${id}`),
   updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
