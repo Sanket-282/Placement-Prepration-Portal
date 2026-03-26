@@ -163,8 +163,8 @@ exports.submitMockTest = async (req, res) => {
       for (const question of section.questions) {
         totalQuestions++;
         sectionQuestions++;
-        totalMaxScore += question.marks;
-        sectionMaxScore += question.marks;
+        totalMaxScore += question.marks || 1;
+        sectionMaxScore += question.marks || 1;
 
         const userAnswer = answers[question._id.toString()];
         const isCorrect = userAnswer === question.answer;
@@ -443,7 +443,6 @@ exports.getTestResult = async (req, res) => {
 exports.toggleMockTest = async (req, res) => {
   try {
     const test = await MockTest.findById(req.params.id);
-
     if (!test) {
       return res.status(404).json({ success: false, message: 'Test not found' });
     }
@@ -453,12 +452,12 @@ exports.toggleMockTest = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Test ${test.isActive ? 'activated' : 'deactivated'} successfully`,
       test: {
         _id: test._id,
         title: test.title,
         isActive: test.isActive
-      }
+      },
+      message: `Test ${test.isActive ? 'activated' : 'deactivated'} successfully`
     });
   } catch (error) {
     console.error('Toggle mock test error:', error);
@@ -469,33 +468,6 @@ exports.toggleMockTest = async (req, res) => {
   }
 };
 
-
-// @desc    Toggle mock test active status (Admin)
-// @route   POST /api/mock-tests/:id/toggle
-// @access  Private Admin
-exports.toggleMockTest = async (req, res) => {
-  try {
-    const test = await MockTest.findById(req.params.id);
-    if (!test) {
-      return res.status(404).json({ success: false, message: 'Test not found' });
-    }
-
-    test.isActive = !test.isActive;
-    await test.save();
-
-    res.status(200).json({
-      success: true,
-      test,
-      message: `Test ${test.isActive ? 'activated' : 'deactivated'}`
-    });
-  } catch (error) {
-    console.error('Toggle mock test error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error toggling test status'
-    });
-  }
-};
 
 
 

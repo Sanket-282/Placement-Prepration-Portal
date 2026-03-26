@@ -1009,26 +1009,61 @@ router.delete('/company-questions/:id', async (req, res) => {
 
 // ==================== MOCK TEST MANAGEMENT ====================
 
-// @desc    Get all mock tests (Admin)
-const { getMockTests, createMockTest, updateMockTest, deleteMockTest, toggleMockTest } = require('../controllers/mockTestController');
-router.get('/mock-tests', getMockTests);
+const { createMockTest, updateMockTest, deleteMockTest, toggleMockTest } = require('../controllers/mockTestController');
 
+// @desc    Get all mock tests (Admin) with section question counts
+router.get('/mock-tests', async (req, res) => {
+  try {
+    const { page = 1, limit = 12 } = req.query;
+    
+    const tests = await MockTest.find({}).sort({ createdAt: -1 })
+      .skip((page - 1) * parseInt(limit))
+      .limit(parseInt(limit));
 
+    const total = await MockTest.countDocuments({});
+
+    // Add question counts and attempts to each test
+    const testsWithCounts = await Promise.all(tests.map(async (test) => {
+      const questionCount = test.sections.reduce((sum, section) => sum + (section.questions ? section.questions.length : 0), 0);
+      
+      return {
+        ...test.toObject(),
+        sections: test.sections.map(section => ({
+          ...section.toObject(),
+          questionCount: section.questions ? section.questions.length : 0
+        })),
+        totalQuestions: questionCount
+      };
+    }));
+
+    res.status(200).json({
+      success: true,
+      tests: testsWithCounts,
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit)),
+      total
+    });
+  } catch (error) {
+    console.error('Get admin mock tests error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching mock tests',
+      error: error.message
+    });
+  }
+});
 
 // @desc    Add new mock test (Admin)
-router.post('/mock-tests', createMockTest);
-
+router.post('/mock-tests', protect, isAdmin, createMockTest);
 
 // @desc    Update mock test (Admin)
-router.put('/mock-tests/:id', updateMockTest);
-
+router.put('/mock-tests/:id', protect, isAdmin, updateMockTest);
 
 // @desc    Delete mock test (Admin)
-router.delete('/mock-tests/:id', deleteMockTest);
-
+router.delete('/mock-tests/:id', protect, isAdmin, deleteMockTest);
 
 // @desc    Toggle mock test status (Admin)
-router.post('/mock-tests/:id/toggle', toggleMockTest);
+router.post('/mock-tests/:id/toggle', protect, isAdmin, toggleMockTest);
 
 
 // ==================== LEADERBOARD MANAGEMENT ====================

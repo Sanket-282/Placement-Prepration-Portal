@@ -89,6 +89,17 @@ export default function AdminMockTests() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.title.trim()) {
+      setError('Test title is required');
+      return;
+    }
+    if (formData.sections.length === 0) {
+      setError('At least one section is required');
+      return;
+    }
+    
     setError('');
     setSuccess('');
     try {
@@ -198,23 +209,10 @@ const removeQuestionFromSection = (sectionIdx, qId) => {
         difficulty: pickerFilters.difficulty,
         limit: 100
       };
-      console.log('Fetching with params:', params);
       const res = await questionsAPI.getAll(params);
-      console.log('Raw API Response:', res);
-      let questions = [];
-      if (res.data && Array.isArray(res.data)) {
-        questions = res.data;
-      } else if (res.data && res.data.questions && Array.isArray(res.data.questions)) {
-        questions = res.data.questions;
-      } else if (res.data && Array.isArray(res.data.data)) {
-        questions = res.data.data;
-      } else {
-        questions = [];
-      }
-      console.log('Processed questions:', questions.length);
-      setAvailableQuestions(questions);
+      const questions = res.data?.questions || res.data || [];
+      setAvailableQuestions(Array.isArray(questions) ? questions : []);
     } catch (err) {
-      console.error('Picker API error:', err.response?.data || err);
       setAvailableQuestions([]);
     } finally {
       setPickerLoading(false);
@@ -222,11 +220,14 @@ const removeQuestionFromSection = (sectionIdx, qId) => {
   }, [pickerFilters.category, pickerFilters.topic, pickerFilters.difficulty]);
 
   useEffect(() => {
+    let timeoutId;
     if (pickerOpen) {
-      const timer = setTimeout(fetchPickerQuestions, 200);
-      return () => clearTimeout(timer);
+      timeoutId = setTimeout(fetchPickerQuestions, 500);
     }
-  }, [fetchPickerQuestions, pickerOpen]);
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [pickerFilters, pickerOpen]);
 
   const handleFilterChange = (field, value) => {
     setPickerFilters(prev => ({ ...prev, [field]: value }));
@@ -333,7 +334,7 @@ const removeQuestionFromSection = (sectionIdx, qId) => {
             <div className="flex flex-wrap gap-2 mb-6">
               {test.sections?.slice(0,4).map((s, i) => (
                 <span key={i} className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
-                  {s.name} ({s.questions?.length || 0})
+                  {s.name} ({s.questionCount || s.questions?.length || 0})
                 </span>
               ))}
               {test.sections && test.sections.length > 4 && (

@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "build": "node node_modules/vite/bin/vite.js build"
     "dev": "nodemon server.js"
+
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

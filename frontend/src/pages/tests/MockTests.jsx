@@ -19,16 +19,26 @@ const MockTests = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchTests();
-  }, []);
+  }, [searchTerm, selectedCategory, page]);
 
   const fetchTests = async () => {
+    setLoading(true);
     try {
-      const response = await mockTestsAPI.getAll();
+      const params = {
+        search: searchTerm || undefined,
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        page,
+        limit: 9
+      };
+      const response = await mockTestsAPI.getAll(params);
       if (response.data.success) {
         setTests(response.data.tests || []);
+        setTotalPages(response.data.totalPages || 1);
       }
     } catch (error) {
       console.error('Error fetching tests:', error);
@@ -36,13 +46,6 @@ const MockTests = () => {
       setLoading(false);
     }
   };
-
-
-  const filteredTests = tests.filter(test => {
-    const matchesSearch = test.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || test.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
@@ -77,12 +80,28 @@ const MockTests = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col lg:flex-row gap-4 items-end">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input type="text" placeholder="Search tests..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="form-input pl-12" />
+          <input 
+            type="text" 
+            placeholder="Search tests..." 
+            value={searchTerm} 
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }} 
+            className="form-input pl-12" 
+          />
         </div>
-        <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="form-input sm:w-48">
+        <select 
+          value={selectedCategory} 
+          onChange={(e) => {
+            setSelectedCategory(e.target.value);
+            setPage(1);
+          }} 
+          className="form-input lg:w-48"
+        >
           <option value="all">All Categories</option>
           <option value="placement">Placement</option>
           <option value="campus">Campus</option>
@@ -90,9 +109,34 @@ const MockTests = () => {
         </select>
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-4">
+          <div className="text-sm text-slate-500">
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-2 text-slate-400 hover:text-slate-600 disabled:opacity-50"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="p-2 text-slate-400 hover:text-slate-600 disabled:opacity-50"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tests Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredTests.map((test, index) => {
+      {tests.map((test, index) => {
           const diffStyle = getDifficultyColor(test.difficulty);
           return (
             <div key={test._id} className="card card-hover p-5 group" style={{ animationDelay: `${index * 50}ms` }}>
@@ -136,7 +180,7 @@ const MockTests = () => {
         })}
       </div>
 
-      {filteredTests.length === 0 && (
+      {tests.length === 0 && (
         <div className="card p-12 text-center">
           <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
             <FileText className="w-10 h-10 text-slate-400" />

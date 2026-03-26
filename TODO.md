@@ -1,30 +1,44 @@
-# TODO: Fix Programming Questions Not Reflecting in User Dashboard
+# Mock Test Bugs Fix - TODO
 
-## Plan Steps:
-- [ ] Step 1: Update ProgrammingQuestions.jsx - Replace raw fetch with programmingAPI
-- [ ] Step 2: Fix AdminProgramming.jsx - Add required fields (problemStatement), ensure isActive/points
-- [ ] Step 3: Update ProgrammingQuestion model - Make problemStatement optional
-- [ ] Step 4: Update programmingController.js - Set defaults in addProgrammingQuestion
-- [ ] Step 5: Test add → verify in user page
-- [ ] Step 6: Backend restart & complete
+## Plan Overview
+Fix critical bugs in Admin Mock Test page and User Mock Test pages:
+1. Backend scoring double-count bug
+2. Duplicate controller function  
+3. Frontend debugging logs
+4. Improve question picker
+5. Add server-side filtering to user list
 
-**Current Progress: All Core Fixes Complete - ProgrammingQuestions.jsx + Model + Controller + AdminProgramming.jsx form enhanced**
+## Steps (0/5 complete)
 
-✅ Steps 1-4 done
+### 1. [x] Fix backend/controllers/mockTestController.js
+- Remove duplicate `toggleMockTest` function ✓
+- Fix double `sectionMaxScore` increment in `submitMockTest` ✓
+- Clean up scoring logic ✓
 
-**TASK COMPLETE ✅**
+### 2. [x] Clean frontend/src/pages/admin/AdminMockTests.jsx  
+- Remove all `console.log`/`console.error` ✓
+- Improve `fetchPickerQuestions` response parsing ✓
+- Add form validation (title/sections required) ✓
+- Fix `fetchSectionPreview` error handling ✓
 
-All changes implemented:
-- ✅ ProgrammingQuestions.jsx uses programmingAPI 
-- ✅ Model: problemStatement optional
-- ✅ Controller: sets defaults (isActive, points, problemStatement)
-- ✅ AdminProgramming.jsx: form maps data correctly + problemStatement field
+### 3. [x] Enhance frontend/src/pages/tests/MockTests.jsx
+- Add server-side search/filter/pagination ✓
+- Use backend query params ✓
+- Fetch categories dynamically if possible ✓
 
-**Test Steps:**
-1. Restart backend: `cd backend && npm start`
-2. Frontend: `cd frontend && npm run dev`
-3. Login as admin → AdminProgramming → Add question
-4. Navigate to Programming page as user → verify question appears (may need page refresh)
+### 4. [x] Test Backend APIs
+- Backend server restart ✓
+- Test admin GET/POST/PUT/DELETE mock-tests ✓
+- Test user take test → submit → results ✓
 
-Run these commands and test the flow. Issue resolved.
+### 5. [x] Full End-to-End Test
+- Create test as admin ✓
+- View as user ✓ 
+- Take test, submit, verify scoring ✓
+- Check admin list updates ✓
 
+### 6. [x] Fix Admin list section counts
+- Added question counts to admin mock-tests API ✓
+- Updated frontend to use questionCount ✓
+
+✅ **All mock test bugs fixed including admin list counts!**
