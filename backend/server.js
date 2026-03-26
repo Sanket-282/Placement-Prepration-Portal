@@ -26,8 +26,9 @@ const app = express();
 app.use(express.json());
 
 // Enable CORS
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: ['http://localhost:5173', 'https://placement-prepration-portal-oojc.vercel.app/'],
   credentials: true
 }));
 
