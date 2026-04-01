@@ -3,27 +3,20 @@ const Submission = require('../models/Submission');
 const User = require('../models/User');
 
 // Judge0 API configuration
-const JUDGE0_API_URL = 'https://judge0-ce.p.rapidapi.com';
-const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
-const JUDGE0_HOST = process.env.JUDGE0_API_HOST || 'judge0-ce.p.rapidapi.com';
+const JUDGE0_API_URL = 'https://ce.judge0.com';
 
 const languageIds = {
   javascript: 63,
   python: 71,
   java: 62,
-  cpp: 54,
-  c: 50,
-  sql: 82
+  cpp: 54
 };
 
-// Helper function to make Judge0 API requests
 const judge0Request = async (endpoint, method, body = null) => {
   const options = {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-RapidAPI-Key': JUDGE0_API_KEY,
-      'X-RapidAPI-Host': JUDGE0_HOST
+      headers: {
+      'Content-Type': 'application/json'
     }
   };
 
@@ -106,76 +99,90 @@ exports.getCodingQuestion = async (req, res) => {
   }
 };
 
-// @desc    Get random coding question (Daily Challenge)
-// @route   GET /api/coding-questions/daily
-// @access  Private
-exports.getDailyChallenge = async (req, res) => {
-  try {
-    // Get a random question based on difficulty
-    const difficultyWeights = { easy: 0.5, medium: 0.35, hard: 0.15 };
-    const random = Math.random();
-    let difficulty;
-    
-    if (random < difficultyWeights.easy) difficulty = 'easy';
-    else if (random < difficultyWeights.easy + difficultyWeights.medium) difficulty = 'medium';
-    else difficulty = 'hard';
+// @desc    Get today's Daily Challenge (prefer isDailyActive)
+  // @route   GET /api/coding-questions/daily
+  // @access  Public
+  exports.getDailyChallenge = async (req, res) => {
+    try {
+      // First try to get active daily challenge
+      let question = await CodingQuestion.findOne({ isDailyActive: true, isActive: true });
 
-    const question = await CodingQuestion.aggregate([
-      { $match: { isActive: true, difficulty } },
-      { $sample: { size: 1 } }
-    ]);
+      // Fallback to random if no daily active
+      if (!question) {
+        const difficultyWeights = { easy: 0.5, medium: 0.35, hard: 0.15 };
+        const random = Math.random();
+        let difficulty;
+        
+        if (random < difficultyWeights.easy) difficulty = 'easy';
+        else if (random < difficultyWeights.easy + difficultyWeights.medium) difficulty = 'medium';
+        else difficulty = 'hard';
 
-    if (question.length === 0) {
-      return res.status(404).json({
+        const dailyQ = await CodingQuestion.aggregate([
+          { $match: { isActive: true, difficulty } },
+          { $sample: { size: 1 } }
+        ]);
+
+        if (dailyQ.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: 'No daily challenge available'
+          });
+        }
+
+        question = dailyQ[0];
+      }
+
+      const questionData = {
+        _id: question._id,
+        title: question.title,
+        description: question.description,
+        problemStatement: question.problemStatement,
+        inputFormat: question.inputFormat,
+        outputFormat: question.outputFormat,
+        constraints: question.constraints,
+        examples: question.examples,
+        difficulty: question.difficulty,
+        category: question.category,
+        language: question.language,
+        starterCode: question.starterCode,
+        points: question.points,
+        isDailyChallenge: true,
+        isDailyActive: question.isDailyActive
+      };
+
+      let alreadySolved = false;
+      let previousSubmission = null;
+
+      // Check if user already solved today's challenge
+      if (req.user) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const existingSubmission = await Submission.findOne({
+          user: req.user.id,
+          codingQuestion: question._id,
+          isDailyChallenge: true,
+          challengeDate: { $gte: today }
+        });
+        alreadySolved = !!existingSubmission;
+        previousSubmission = existingSubmission;
+      }
+
+      res.status(200).json({
+        success: true,
+        question: questionData,
+        alreadySolved,
+        previousSubmission
+      });
+    } catch (error) {
+      console.error('Get daily challenge error:', error);
+      res.status(500).json({
         success: false,
-        message: 'No daily challenge available'
+        message: 'Error fetching daily challenge',
+        error: error.message
       });
     }
-
-    const q = question[0];
-    const questionData = {
-      _id: q._id,
-      title: q.title,
-      description: q.description,
-      problemStatement: q.problemStatement,
-      inputFormat: q.inputFormat,
-      outputFormat: q.outputFormat,
-      constraints: q.constraints,
-      examples: q.examples,
-      difficulty: q.difficulty,
-      category: q.category,
-      language: q.language,
-      starterCode: q.starterCode,
-      points: q.points,
-      isDailyChallenge: true
-    };
-
-    // Check if user already solved today's challenge
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const existingSubmission = await Submission.findOne({
-      user: req.user.id,
-      codingQuestion: q._id,
-      isDailyChallenge: true,
-      challengeDate: { $gte: today }
-    });
-
-    res.status(200).json({
-      success: true,
-      question: questionData,
-      alreadySolved: !!existingSubmission,
-      previousSubmission: existingSubmission
-    });
-  } catch (error) {
-    console.error('Get daily challenge error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching daily challenge',
-      error: error.message
-    });
-  }
-};
+  };
 
 // @desc    Run code (without submission)
 // @route   POST /api/coding-questions/run
@@ -204,65 +211,22 @@ exports.runCode = async (req, res) => {
     // Use whichever input is provided (stdin or input)
     const codeInput = input || stdin || '';
 
-    // Create submission on Judge0
     const createResponse = await judge0Request('/submissions?base64_encoded=true&wait=true', 'POST', {
       source_code: Buffer.from(sourceCode).toString('base64'),
       language_id: languageId,
       stdin: codeInput ? Buffer.from(codeInput).toString('base64') : '',
-      expected_output: null,
       cpu_time_limit: 2,
       memory_limit: 128000
     });
 
-    // Properly decode base64 responses - handle null/undefined
-    let stdout = '';
-    let stderr = '';
-    let compile_output = '';
+    let stdout = createResponse.stdout ? Buffer.from(createResponse.stdout, 'base64').toString('utf8') : '';
+    let stderr = createResponse.stderr ? Buffer.from(createResponse.stderr, 'base64').toString('utf8') : '';
+    let compile_output = createResponse.compile_output ? Buffer.from(createResponse.compile_output, 'base64').toString('utf8') : '';
 
-    try {
-      stdout = createResponse.stdout ? Buffer.from(createResponse.stdout, 'base64').toString('utf8') : '';
-    } catch (e) {
-      stdout = createResponse.stdout || '';
-    }
-
-    try {
-      stderr = createResponse.stderr ? Buffer.from(createResponse.stderr, 'base64').toString('utf8') : '';
-    } catch (e) {
-      stderr = createResponse.stderr || '';
-    }
-
-    try {
-      compile_output = createResponse.compile_output ? Buffer.from(createResponse.compile_output, 'base64').toString('utf8') : '';
-    } catch (e) {
-      compile_output = createResponse.compile_output || '';
-    }
-
-    // Determine the final output to return
-    let finalOutput = '';
-    let outputType = 'stdout';
-
-    // Priority: compile_output > stderr > stdout
-    if (compile_output && compile_output.trim()) {
-      finalOutput = compile_output;
-      outputType = 'compile_output';
-    } else if (stderr && stderr.trim()) {
-      finalOutput = stderr;
-      outputType = 'stderr';
-    } else if (stdout !== null && stdout !== undefined) {
-      finalOutput = stdout;
-      outputType = 'stdout';
-    }
-
-    // If no output at all, provide a helpful message
-    if (!finalOutput || !finalOutput.trim()) {
-      // Check the status - if it's "Accepted" but no output, code might just not print anything
-      const statusDesc = createResponse.status?.description || '';
-      if (statusDesc.toLowerCase().includes('accepted')) {
-        finalOutput = 'Code executed successfully (no output)';
-      } else {
-        finalOutput = 'No output';
-      }
-    }
+    console.log('Judge0 createResponse:', createResponse);
+    let finalOutput = compile_output || stderr || stdout || 'No output';
+    console.log('decoded stdout:', stdout);
+    console.log('finalOutput:', finalOutput);
 
     res.status(200).json({
       success: true,
@@ -270,11 +234,11 @@ exports.runCode = async (req, res) => {
       stdout: stdout,
       stderr: stderr,
       compile_output: compile_output,
-      outputType: outputType,
-      status: createResponse.status,
+      status: createResponse.status?.description,
       statusDescription: createResponse.status?.description,
       time: createResponse.time,
-      memory: createResponse.memory
+      memory: createResponse.memory,
+      rawResponse: createResponse
     });
   } catch (error) {
     console.error('Run code error:', error);
@@ -291,7 +255,8 @@ exports.runCode = async (req, res) => {
 // @access  Private
 exports.submitCode = async (req, res) => {
   try {
-    const { language, sourceCode, questionId } = req.body;
+    const { language, sourceCode } = req.body;
+    let questionId = req.body.questionId || req.body.codingQuestionId;
     const userId = req.user.id;
 
     if (!language || !sourceCode || !questionId) {
@@ -331,23 +296,22 @@ exports.submitCode = async (req, res) => {
         source_code: Buffer.from(sourceCode).toString('base64'),
         language_id: languageId,
         stdin: Buffer.from(testCase.input).toString('base64'),
-        expected_output: Buffer.from(testCase.output).toString('base64'),
-        cpu_time_limit: question.timeLimit,
-        memory_limit: question.memoryLimit * 1000
+        cpu_time_limit: 2,
+        memory_limit: 128000
       });
 
       const output = createResponse.stdout ? Buffer.from(createResponse.stdout, 'base64').toString().trim() : '';
       const expectedOutput = testCase.output.trim();
-      const isPassed = output === expectedOutput && createResponse.status.id === 3;
+      const isPassed = output === expectedOutput && createResponse.status?.id === 3;
 
       if (isPassed) passedTests++;
 
-      results.push({
+        results.push({
         testCase: i + 1,
         input: testCase.input,
         expectedOutput: testCase.output,
-        output,
-        status: createResponse.status.description,
+        output: output,
+        status: 'Executed',
         isPassed,
         time: createResponse.time,
         memory: createResponse.memory
@@ -386,6 +350,13 @@ exports.submitCode = async (req, res) => {
       });
     }
 
+    const normalizedResult = {
+      status: isAllPassed ? 'accepted' : 'wrong_answer',
+      passedTests,
+      totalTests: testCases.length,
+      score
+    };
+
     res.status(200).json({
       success: true,
       isCorrect: isAllPassed,
@@ -393,6 +364,8 @@ exports.submitCode = async (req, res) => {
       maxScore: question.points,
       passedTests,
       totalTests: testCases.length,
+      output: isAllPassed ? 'All test cases passed successfully.' : `${passedTests}/${testCases.length} test cases passed.`,
+      result: normalizedResult,
       results,
       submission: {
         id: submission._id,
@@ -467,30 +440,68 @@ exports.updateCodingQuestion = async (req, res) => {
 };
 
 // @desc    Delete coding question (Admin)
-// @route   DELETE /api/coding-questions/:id
-// @access  Private (Admin)
-exports.deleteCodingQuestion = async (req, res) => {
-  try {
-    const question = await CodingQuestion.findByIdAndDelete(req.params.id);
+  // @route   DELETE /api/coding-questions/:id
+  // @access  Private (Admin)
+  exports.deleteCodingQuestion = async (req, res) => {
+    try {
+      const question = await CodingQuestion.findByIdAndDelete(req.params.id);
 
-    if (!question) {
-      return res.status(404).json({
+      if (!question) {
+        return res.status(404).json({
+          success: false,
+          message: 'Coding question not found'
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Coding question deleted successfully'
+      });
+    } catch (error) {
+      console.error('Delete coding question error:', error);
+      res.status(500).json({
         success: false,
-        message: 'Coding question not found'
+        message: 'Error deleting coding question',
+        error: error.message
       });
     }
+  };
 
-    res.status(200).json({
-      success: true,
-      message: 'Coding question deleted successfully'
-    });
-  } catch (error) {
-    console.error('Delete coding question error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting coding question',
-      error: error.message
-    });
-  }
-};
+  // @desc    Toggle daily active status (Admin)
+  // @route   PATCH /api/coding-questions/:id/set-daily
+  // @access  Private (Admin)
+  exports.toggleDailyActive = async (req, res) => {
+    try {
+      const questionId = req.params.id;
+
+      // Deactivate all other daily challenges
+      await CodingQuestion.updateMany({ isDailyActive: true }, { isDailyActive: false });
+
+      // Toggle this one
+      const question = await CodingQuestion.findById(questionId);
+
+      if (!question) {
+        return res.status(404).json({
+          success: false,
+          message: 'Coding question not found'
+        });
+      }
+
+      question.isDailyActive = !question.isDailyActive;
+      await question.save();
+
+      res.status(200).json({
+        success: true,
+        message: `Coding question ${question.isDailyActive ? 'set as daily active' : 'deactivated as daily'}`,
+        question
+      });
+    } catch (error) {
+      console.error('Toggle daily active error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error toggling daily active',
+        error: error.message
+      });
+    }
+  };
 

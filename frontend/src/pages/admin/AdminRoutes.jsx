@@ -9,6 +9,7 @@ import AdminMockTests from './AdminMockTests';
 import AdminLeaderboard from './AdminLeaderboard';
 import AdminAnalytics from './AdminAnalytics';
 import AdminSettings from './AdminSettings';
+import AdminCodingQuestions from './AdminCodingQuestions';
 
 export default function AdminRoutes() {
   return (
@@ -17,6 +18,7 @@ export default function AdminRoutes() {
       <Route path="dashboard" element={<AdminDashboard />} />
       <Route path="users" element={<AdminUsers />} />
       <Route path="questions" element={<AdminQuestions />} />
+      <Route path="coding-questions" element={<AdminCodingQuestions />} />
       <Route path="programming" element={<AdminProgramming />} />
       <Route path="company-questions" element={<AdminCompanyQuestions />} />
       <Route path="mock-tests" element={<AdminMockTests />} />

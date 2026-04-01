@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Editor from '@monaco-editor/react';
 import { ArrowLeft, Play, Zap, Loader2, CheckCircle, XCircle, Terminal } from 'lucide-react';
 
 import { programmingAPI } from '../../services/programmingAPI';
+import LazyEditor from '../../components/ui/LazyEditor';
 
 
 const languages = [
@@ -20,6 +20,7 @@ const ProgrammingSolve = () => {
   const [question, setQuestion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState('');
+  const [customInput, setCustomInput] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [output, setOutput] = useState('');
   const [running, setRunning] = useState(false);
@@ -36,6 +37,7 @@ const ProgrammingSolve = () => {
       const response = await programmingAPI.getQuestion(questionId);
       setQuestion(response.data.question);
       setCode(response.data.question.starterCode?.[language] || '');
+      setCustomInput(response.data.question.examples?.[0]?.input || '');
     } catch (error) {
       console.error('Error fetching question:', error);
     } finally {
@@ -57,7 +59,8 @@ const ProgrammingSolve = () => {
       const response = await programmingAPI.runCode({ 
         sourceCode: code, 
         language, 
-        stdin: '' 
+        input: customInput,
+        stdin: customInput
       });
       setOutput(response.data.output || response.data.stderr || 'No output');
     } catch (error) {
@@ -215,11 +218,11 @@ const ProgrammingSolve = () => {
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          <Editor 
+          <LazyEditor 
             height="100%" 
             language={languages.find(l => l.id === language)?.monaco || 'javascript'}
             value={code} 
-            onChange={setCode}
+            onChange={(value) => setCode(value || '')}
             theme="vs-dark" 
             options={{
               minimap: { enabled: false },
@@ -234,33 +237,53 @@ const ProgrammingSolve = () => {
           />
         </div>
 
-        {/* Output */}
-        <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-900">
-          <div className="flex items-center justify-between px-4 py-3 bg-slate-800">
-            <span className="flex items-center gap-2 text-sm font-semibold text-slate-200">
-              <Terminal className="w-4 h-4" />
-              Output
-            </span>
-            {result && (
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
-                result.status === 'accepted' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-              }`}>
-                {result.status === 'accepted' ? <CheckCircle size={14} /> : <XCircle size={14} />}
-                {result.status}
-              </span>
-            )}
+        {/* Input + Output */}
+        <div className="grid border-t border-slate-200 dark:border-slate-700 md:grid-cols-2">
+          <div className="border-b border-slate-200 dark:border-slate-700 md:border-b-0 md:border-r">
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-slate-800">
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Custom Input</span>
+              <button
+                type="button"
+                onClick={() => setCustomInput(question.examples?.[0]?.input || '')}
+                className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+              >
+                Use Example
+              </button>
+            </div>
+            <textarea
+              value={customInput}
+              onChange={(event) => setCustomInput(event.target.value)}
+              placeholder="Enter stdin here. Each new line will be passed to your program."
+              className="h-40 w-full resize-none border-0 bg-white px-4 py-3 font-mono text-sm text-slate-800 outline-none dark:bg-slate-900 dark:text-slate-100"
+            />
           </div>
-          <div className="h-40 p-4 overflow-auto font-mono text-sm">
-            {running ? (
-              <div className="flex items-center gap-2 text-slate-400">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Running your code...
-              </div>
-            ) : output ? (
-              <pre className="whitespace-pre-wrap text-green-400">{output}</pre>
-            ) : (
-              <p className="text-slate-500">Run your code to see output</p>
-            )}
+          <div className="bg-slate-900">
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-800">
+              <span className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                <Terminal className="w-4 h-4" />
+                Output
+              </span>
+              {result && (
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
+                  result.status === 'accepted' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                }`}>
+                  {result.status === 'accepted' ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                  {result.status}
+                </span>
+              )}
+            </div>
+            <div className="h-40 p-4 overflow-auto font-mono text-sm">
+              {running ? (
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Running your code...
+                </div>
+              ) : output ? (
+                <pre className="whitespace-pre-wrap text-green-400">{output}</pre>
+              ) : (
+                <p className="text-slate-500">Run your code to see output</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

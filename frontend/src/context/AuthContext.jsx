@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -15,28 +15,38 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
+  const checkAuth = useCallback(async () => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await api.get('/auth/me');
+
+      if (response.data?.success && response.data?.user) {
+        setUser(response.data.user);
+      } else {
+        localStorage.removeItem('token');
+        setUser(null);
+      }
+    } catch (error) {
+      localStorage.removeItem('token');
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const checkAuth = async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const response = await api.get('/auth/me');
-        if (response.data.success) {
-          setUser(response.data.user);
-        }
-      } catch (error) {
-        localStorage.removeItem('token');
-      }
-    }
-    setLoading(false);
-  };
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const login = async (email, phone, password) => {
     const response = await api.post('/auth/login', { email, phone, password });
-    if (response.data.success) {
+    if (response.data) {
       // Store token and user data
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
@@ -47,10 +57,10 @@ export const AuthProvider = ({ children }) => {
 
   const loginVerify = async (userId, otp) => {
     const response = await api.post('/auth/login-verify', { userId, otp });
-    if (response.data.success) {
+    if (response.data?.success) {
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
-      return response.data.user;
+      return response.data;
     }
     throw new Error(response.data.message);
   };

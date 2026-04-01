@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminAPI } from '../../services/api';
-import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Loader2 } from 'lucide-react';
 
 const categories = ['arrays', 'strings', 'linked-lists', 'trees', 'graphs', 'dynamic-programming', 'sorting', 'searching', 'mathematics', 'general'];
 const difficulties = ['easy', 'medium', 'hard'];
@@ -8,7 +8,8 @@ const languages = ['javascript', 'python', 'java', 'cpp', 'c', 'sql'];
 
 export default function AdminCodingQuestions() {
   const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(true);
+  const [loadingToggle, setLoadingToggle] = useState('');
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [showModal, setShowModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
@@ -69,16 +70,30 @@ export default function AdminCodingQuestions() {
     setShowModal(true);
   };
 
+  const handleToggleDaily = async (id, isActive) => {
+      if (loadingToggle) return;
+      
+      setLoadingToggle(id);
+      try {
+        await adminAPI.toggleDailyActive(id);
+        fetchQuestions();
+      } catch (e) {
+        alert('Error toggling daily status');
+      } finally {
+        setLoadingToggle('');
+      }
+    };
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Coding Problems</h1>
-          <p className="text-slate-500 dark:text-slate-400">Manage coding challenges</p>
-        </div>
-        <button onClick={() => { setEditingQuestion(null); setShowModal(true); }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2">
-          <Plus size={18} /> Add Problem
-        </button>
+    <div className="space-y-6">  
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">  
+        <div>  
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Coding Problems</h1>  
+          <p className="text-slate-500 dark:text-slate-400">Manage coding challenges</p>  
+        </div>  
+        <button onClick={() => { setEditingQuestion(null); setShowModal(true); }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2">  
+          <Plus size={18} /> Add Problem  
+        </button>  
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
@@ -107,6 +122,7 @@ export default function AdminCodingQuestions() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Difficulty</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Languages</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Daily Active</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -123,12 +139,26 @@ export default function AdminCodingQuestions() {
                       <span className={`px-2 py-1 rounded text-xs ${q.difficulty === 'easy' ? 'bg-green-100 text-green-800' : q.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{q.difficulty}</span>
                     </td>
                     <td className="px-6 py-4"><div className="flex flex-wrap gap-1">{q.language?.slice(0, 3).map(l => <span key={l} className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-xs">{l}</span>)}</div></td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => openEdit(q)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={16} /></button>
-                        <button onClick={() => handleDelete(q._id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
-                      </div>
-                    </td>
+                <td className="px-6 py-4 text-right">
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => openEdit(q)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={16} /></button>
+                    <button onClick={() => handleDelete(q._id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <button 
+                    onClick={() => handleToggleDaily(q._id, q.isDailyActive)}
+                    disabled={loadingToggle}
+                    className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all ${
+                      q.isDailyActive 
+                        ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' 
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
+                    } disabled:opacity-50`}
+                  >
+                    {q.isDailyActive ? 'Daily Active' : 'Set Daily'}
+                    {loadingToggle === q._id && <Loader2 className="w-3 h-3 animate-spin" />}
+                  </button>
+                </td>
                   </tr>
                 ))
               )}

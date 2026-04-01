@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Editor from '@monaco-editor/react';
 import { codingAPI, userAPI } from '../services/api';
+import LazyEditor from '../components/ui/LazyEditor';
 import {
   Trophy,
   Code,
@@ -60,6 +60,7 @@ const DailyChallenge = () => {
   const [challenge, setChallenge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState('');
+  const [customInput, setCustomInput] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [output, setOutput] = useState('');
   const [running, setRunning] = useState(false);
@@ -78,6 +79,7 @@ const DailyChallenge = () => {
       if (response.data.success) {
         setChallenge(response.data.question);
         setCode(defaultCode[language] || '');
+        setCustomInput(response.data.question?.examples?.[0]?.input || '');
         setPoints(response.data.points || 10);
       }
     } catch (error) {
@@ -95,6 +97,7 @@ const DailyChallenge = () => {
         points: 10
       });
       setCode(defaultCode[language] || '');
+      setCustomInput('[2,7,11,15], 9');
     } finally {
       setLoading(false);
     }
@@ -112,7 +115,8 @@ const DailyChallenge = () => {
       const response = await codingAPI.runCode({
         sourceCode: code,
         language: language,
-        stdin: ''
+        stdin: customInput,
+        input: customInput
       });
       
       if (response.data.success) {
@@ -307,7 +311,7 @@ const DailyChallenge = () => {
 
           {/* Editor */}
           <div className="flex-1">
-            <Editor
+            <LazyEditor
               height="100%"
               language={languages.find(l => l.id === language)?.monaco}
               value={code}
@@ -325,32 +329,52 @@ const DailyChallenge = () => {
             />
           </div>
 
-          {/* Output */}
-          <div className="border-t border-slate-200 dark:border-slate-700">
-            <div className="flex items-center justify-between px-4 py-2 bg-slate-100 dark:bg-slate-700">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Output</span>
-              {result && (
-                <span className={`flex items-center gap-1 text-sm ${result.status === 'accepted' ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {result.status === 'accepted' ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    <XCircle className="w-4 h-4" />
-                  )}
-                  {result.status === 'accepted' ? 'Accepted!' : 'Try Again'}
-                </span>
-              )}
+          {/* Input + Output */}
+          <div className="grid border-t border-slate-200 dark:border-slate-700 md:grid-cols-2">
+            <div className="border-b border-slate-200 dark:border-slate-700 md:border-b-0 md:border-r">
+              <div className="flex items-center justify-between px-4 py-2 bg-slate-100 dark:bg-slate-700">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Custom Input</span>
+                <button
+                  type="button"
+                  onClick={() => setCustomInput(challenge?.examples?.[0]?.input || '')}
+                  className="text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                >
+                  Use Example
+                </button>
+              </div>
+              <textarea
+                value={customInput}
+                onChange={(event) => setCustomInput(event.target.value)}
+                placeholder="Enter stdin here for quick testing."
+                className="h-32 w-full resize-none border-0 bg-white px-4 py-3 font-mono text-sm text-slate-800 outline-none dark:bg-slate-900 dark:text-slate-100"
+              />
             </div>
-            <div className="h-32 p-4 bg-slate-900 overflow-auto">
-              {running ? (
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Running...
-                </div>
-              ) : (
-                <pre className="text-sm text-green-400 font-mono whitespace-pre-wrap">
-                  {output || 'Run your code to see output'}
-                </pre>
-              )}
+            <div>
+              <div className="flex items-center justify-between px-4 py-2 bg-slate-100 dark:bg-slate-700">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Output</span>
+                {result && (
+                  <span className={`flex items-center gap-1 text-sm ${result.status === 'accepted' ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {result.status === 'accepted' ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <XCircle className="w-4 h-4" />
+                    )}
+                    {result.status === 'accepted' ? 'Accepted!' : 'Try Again'}
+                  </span>
+                )}
+              </div>
+              <div className="h-32 p-4 bg-slate-900 overflow-auto">
+                {running ? (
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Running...
+                  </div>
+                ) : (
+                  <pre className="text-sm text-green-400 font-mono whitespace-pre-wrap">
+                    {output || 'Run your code to see output'}
+                  </pre>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -52,10 +52,6 @@ const userSchema = new mongoose.Schema({
     enum: ['active', 'blocked', 'suspended'],
     default: 'active'
   },
-  lastLogin: {
-    type: Date,
-    default: null
-  },
   score: {
     type: Number,
     default: 0
@@ -68,18 +64,6 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  avatar: {
-    type: String,
-    default: ''
-  },
-  bookmarkedQuestions: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Question'
-  }],
-  bookmarkedCodingQuestions: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'CodingQuestion'
-  }],
   otp: {
     type: String,
     select: false
@@ -100,7 +84,41 @@ const userSchema = new mongoose.Schema({
     type: Date,
     select: false
   },
-  // Resume fields
+  lastActive: {
+    type: Date,
+    default: Date.now
+  },
+  bookmarkedQuestions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Question'
+  }],
+  bookmarkedCodingQuestions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CodingQuestion'
+  }],
+  // Profile fields added (optional)
+  firstName: String,
+  middleName: String,
+  lastName: String,
+  profileImage: String,
+  dob: Date,
+  gender: String,
+  maritalStatus: String,
+  summary: String,
+  rolesResponsibilities: String,
+  skills: [String],
+  interests: [String],
+  coreValues: [String],
+  languagesKnown: [String],
+  weblinks: [String],
+  awards: [String],
+  certifications: [{
+    name: String,
+    issuer: String,
+    issueDate: String,
+    credentialId: String,
+    link: String
+  }],
   education: [{
     institution: String,
     degree: String,
@@ -109,11 +127,10 @@ const userSchema = new mongoose.Schema({
     endYear: String,
     percentage: String
   }],
-  skills: [String],
   projects: [{
     title: String,
     description: String,
-    technologies: [String],
+    technologies: String,
     link: String
   }],
   experience: [{
@@ -123,85 +140,79 @@ const userSchema = new mongoose.Schema({
     endDate: String,
     description: String
   }],
-  // Activity tracking
-  lastActive: {
-    type: Date,
-    default: Date.now
-  },
-  dailyStreak: {
-    type: Number,
-    default: 0
-  },
-  totalQuestionsSolved: {
-    type: Number,
-    default: 0
-  },
-  totalCodingSolved: {
-    type: Number,
-    default: 0
+  careerJourney: [{
+    type: {
+      type: String,
+      enum: ['professional', 'education']
+    },
+    title: String,
+    description: String,
+    startDate: Date,
+    endDate: Date
+  }],
+  contactInfo: {
+    phone: String,
+    currentAddress: String,
+    country: String,
+    state: String,
+    city: String,
+    postalCode: String,
+    permanentAddress: String,
+    sameAsCurrent: {
+      type: Boolean,
+      default: true
+    }
   }
 }, {
   timestamps: true
 });
 
-// Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    next();
-  }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
-// Generate OTP
+userSchema.methods.getSignedJwtToken = function() {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
+};
+
 userSchema.methods.generateOTP = async function() {
   const otp = otpGenerator.generate(6, {
-    upperCase: true,
-    specialChars: false,
-    alphabets: true
+    digits: true,
+    lowerCaseAlphabets: false,
+    upperCaseAlphabets: false,
+    specialChars: false
   });
+
   this.otp = otp;
-  this.otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+  this.otpExpiry = Date.now() + 10 * 60 * 1000;
   await this.save();
+
   return otp;
 };
 
-// Verify OTP
 userSchema.methods.verifyOTP = async function(enteredOTP) {
-  if (this.otp && this.otp.toUpperCase() === enteredOTP.toUpperCase() && this.otpExpiry > Date.now()) {
-    this.otp = undefined;
-    this.otpExpiry = undefined;
-    this.isVerified = true;
-    await this.save();
-    return true;
+  const normalizedOtp = `${enteredOTP ?? ''}`.trim();
+
+  if (!this.otp || !normalizedOtp || !this.otpExpiry || this.otpExpiry < Date.now()) {
+    return false;
   }
-  return false;
+
+  if (`${this.otp}` !== normalizedOtp) {
+    return false;
+  }
+
+  this.otp = undefined;
+  this.otpExpiry = undefined;
+  this.isVerified = true;
+  await this.save();
+
+  return true;
 };
 
-// Compare password
 userSchema.methods.comparePassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
-};
-
-// Generate JWT Token
-userSchema.methods.getSignedJwtToken = function() {
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE
-  });
-};
-
-// Update score
-userSchema.methods.updateScore = async function(points) {
-  this.score += points;
-  this.totalQuestionsSolved += 1;
-  await this.save();
-};
-
-// Get leaderboard rank
-userSchema.statics.getLeaderboardRank = async function(userId) {
-  const users = await this.find({}).sort({ score: -1 });
-  const rank = users.findIndex(u => u._id.toString() === userId.toString()) + 1;
-  return rank;
 };
 
 module.exports = mongoose.model('User', userSchema);

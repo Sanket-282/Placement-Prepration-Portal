@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import Editor from '@monaco-editor/react';
 
 import { programmingAPI } from '../../services/programmingAPI';
+import { codingAPI } from '../../services/api';
+import LazyEditor from '../../components/ui/LazyEditor';
 
 import {
   Code,
@@ -75,6 +76,7 @@ const Programming = () => {
   const [questions, setQuestions] = useState([]);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [code, setCode] = useState('');
+  const [customInput, setCustomInput] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -101,6 +103,7 @@ const Programming = () => {
   const handleSelectQuestion = (question) => {
     setSelectedQuestion(question);
     setCode(defaultCode[language] || '');
+    setCustomInput(question.examples?.[0]?.input || '');
     setOutput('');
     setResult(null);
   };
@@ -114,7 +117,12 @@ const Programming = () => {
     setRunning(true);
     setOutput('');
     try {
-      const response = await codingAPI.runCode({ sourceCode: code, language, stdin: '' });
+      const response = await codingAPI.runCode({
+        sourceCode: code,
+        language,
+        stdin: customInput,
+        input: customInput
+      });
       if (response.data.success) setOutput(response.data.output || response.data.stderr || 'No output');
     } catch (error) {
       setOutput(error.response?.data?.message || 'Error running code');
@@ -289,15 +297,35 @@ console.log(solution([1, 2, 3, 4, 5]));
                   </div>
                 </div>
                 <div className="flex-1 min-h-0">
-                  <Editor height="100%" language={languages.find(l => l.id === language)?.monaco} value={code} onChange={(value) => setCode(value || '')} theme="vs-dark" options={{ minimap: { enabled: false }, fontSize: 14, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, tabSize: 2, wordWrap: 'on', padding: { top: 16 } }} />
+                  <LazyEditor height="100%" language={languages.find(l => l.id === language)?.monaco} value={code} onChange={(value) => setCode(value || '')} theme="vs-dark" options={{ minimap: { enabled: false }, fontSize: 14, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, tabSize: 2, wordWrap: 'on', padding: { top: 16 } }} />
                 </div>
-                <div className="border-t border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between px-4 py-2.5 bg-slate-100 dark:bg-slate-800">
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2"><Terminal className="w-4 h-4" /> Output</span>
-                    {result && (<span className={`flex items-center gap-1.5 text-sm font-medium ${result.status === 'accepted' ? 'text-success-500' : 'text-danger-500'}`}>{result.status === 'accepted' ? <><CheckCircle className="w-4 h-4" /> Accepted</> : <><XCircle className="w-4 h-4" /> Wrong Answer</>}</span>)}
+                <div className="grid border-t border-slate-200 dark:border-slate-700 md:grid-cols-2">
+                  <div className="border-b border-slate-200 dark:border-slate-700 md:border-b-0 md:border-r">
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-slate-100 dark:bg-slate-800">
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Custom Input</span>
+                      <button
+                        type="button"
+                        onClick={() => setCustomInput(selectedQuestion.examples?.[0]?.input || '')}
+                        className="text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                      >
+                        Use Example
+                      </button>
+                    </div>
+                    <textarea
+                      value={customInput}
+                      onChange={(event) => setCustomInput(event.target.value)}
+                      placeholder="Enter stdin here. Each line will be passed to your program."
+                      className="h-36 w-full resize-none border-0 bg-white px-4 py-3 font-mono text-sm text-slate-800 outline-none dark:bg-slate-900 dark:text-slate-100"
+                    />
                   </div>
-                  <div className="h-36 p-4 bg-slate-900 overflow-auto">
-                    {running ? (<div className="flex items-center gap-2 text-slate-400"><Loader2 className="w-4 h-4 animate-spin" /> Running your code...</div>) : (<pre className="text-sm text-green-400 font-mono whitespace-pre-wrap">{output || 'Run your code to see output'}</pre>)}
+                  <div>
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-slate-100 dark:bg-slate-800">
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2"><Terminal className="w-4 h-4" /> Output</span>
+                      {result && (<span className={`flex items-center gap-1.5 text-sm font-medium ${result.status === 'accepted' ? 'text-success-500' : 'text-danger-500'}`}>{result.status === 'accepted' ? <><CheckCircle className="w-4 h-4" /> Accepted</> : <><XCircle className="w-4 h-4" /> Wrong Answer</>}</span>)}
+                    </div>
+                    <div className="h-36 p-4 bg-slate-900 overflow-auto">
+                      {running ? (<div className="flex items-center gap-2 text-slate-400"><Loader2 className="w-4 h-4 animate-spin" /> Running your code...</div>) : (<pre className="text-sm text-green-400 font-mono whitespace-pre-wrap">{output || 'Run your code to see output'}</pre>)}
+                    </div>
                   </div>
                 </div>
               </div>

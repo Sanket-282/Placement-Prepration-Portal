@@ -1,7 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const { protect } = require('./middleware/auth');
+const { runCode: runCompilerCode } = require('./controllers/codingController');
 
 // Route files
 const authRoutes = require('./routes/authRoutes');
@@ -10,6 +13,7 @@ const codingRoutes = require('./routes/codingRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const mockTestRoutes = require('./routes/mockTestRoutes');
 const userRoutes = require('./routes/userRoutes');
+const resumeRoutes = require('./routes/resumeRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const leaderboardRoutes = require('./routes/leaderboardRoutes');
 const aptitudeRoutes = require('./routes/aptitudeRoutes');
@@ -23,28 +27,36 @@ connectDB();
 const app = express();
 
 // Body parser
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
+
+// Static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Enable CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  process.env.FRONTEND_URL
+].filter(Boolean);
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://placement-prepration-portal-oojc.vercel.app/'],
+  origin: allowedOrigins,
   credentials: true
 }));
 
 // Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/questions', questionRoutes);
-
 app.use('/api/programming', require('./routes/programmingRoutes'));
 app.use('/api/coding-questions', codingRoutes);
 app.use('/api/companies', companyRoutes);
-
 app.use('/api/mock-tests', mockTestRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/resume', resumeRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/aptitude', aptitudeRoutes);
+app.post('/api/compiler/run', protect, runCompilerCode);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -81,4 +93,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-

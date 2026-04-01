@@ -1,13 +1,21 @@
 import axios from 'axios';
 
+const normalizeBaseUrl = (value) => {
+  if (!value) return '/api';
+  return value.replace(/\/+$/, '');
+};
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: normalizeBaseUrl(import.meta.env.VITE_API_URL) || '/api',
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Add token to requests
+const API = normalizeBaseUrl(import.meta.env.VITE_API_URL);
+
+export const getUsers = () => axios.get(`${API}/users`);
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -21,7 +29,6 @@ api.interceptors.request.use(
   }
 );
 
-// Handle responses
 api.interceptors.response.use(
   (response) => {
     return response;
@@ -59,7 +66,7 @@ export const questionsAPI = {
   deleteQuestion: (id) => api.delete(`/questions/${id}`)
 };
 
-// Coding Questions API
+// Coding API
 export const codingAPI = {
   getAll: (params) => api.get('/coding-questions', { params }),
   getOne: (id) => api.get(`/coding-questions/${id}`),
@@ -78,7 +85,6 @@ export const companiesAPI = {
   getById: (id) => api.get(`/companies/id/${id}`),
   addCompany: (data) => api.post('/companies', data),
   deleteCompany: (name) => api.delete(`/companies/${name}`),
-  // Company questions
   addQuestion: (companyId, data) => api.post(`/companies/${companyId}/questions`, data),
   updateQuestion: (companyId, questionId, data) => api.put(`/companies/${companyId}/questions/${questionId}`, data),
   deleteQuestion: (companyId, questionId) => api.delete(`/companies/${companyId}/questions/${questionId}`)
@@ -86,14 +92,9 @@ export const companiesAPI = {
 
 // Aptitude API
 export const aptitudeAPI = {
-  // Categories
   getCategories: () => api.get('/aptitude/categories'),
-  
-  // Topics
   getTopics: (params) => api.get('/aptitude/topics', { params }),
   getTopicsWithCounts: (params) => api.get('/aptitude/topics-with-counts', { params }),
-  
-  // Questions
   getQuestions: (params) => api.get('/aptitude/questions', { params })
 };
 
@@ -105,12 +106,8 @@ export const adminAptitudeAPI = {
   deleteQuestion: (id) => api.delete(`/aptitude/admin/question/${id}`)
 };
 
-// Programming APIs (removed duplicates)
-
-
 // Mock Tests API
 export const mockTestsAPI = {
-
   getAll: (params) => api.get('/mock-tests', { params }),
   getOne: (id) => api.get(`/mock-tests/${id}`),
   startTest: (id) => api.post(`/mock-tests/${id}/start`),
@@ -128,7 +125,18 @@ export const userAPI = {
   addBookmark: (data) => api.post('/user/bookmarks', data),
   removeBookmark: (data) => api.delete('/user/bookmarks', { data }),
   getSubmissions: (params) => api.get('/user/submissions', { params }),
-  getStats: () => api.get('/user/stats')
+  getStats: () => api.get('/user/stats'),
+  uploadProfileImage: (formData) => api.post('/user/profile/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+};
+
+export const resumeAPI = {
+  upsert: (data) => api.post('/resume', data),
+  getByUserId: (userId) => api.get(`/resume/${userId}`),
+  updateById: (id, data) => api.put(`/resume/${id}`, data)
 };
 
 // Leaderboard API
@@ -138,19 +146,10 @@ export const leaderboardAPI = {
   getWeekly: () => api.get('/leaderboard/weekly')
 };
 
-
-
-
 // Admin API
 export const adminAPI = {
-
-
-  // Dashboard
   getDashboard: () => api.get('/admin/dashboard'),
-  
-  // Users
   getUsers: (params) => api.get('/admin/users', { params }),
-
   getUser: (id) => api.get(`/admin/users/${id}`),
   updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
@@ -158,49 +157,32 @@ export const adminAPI = {
   unblockUser: (id) => api.post(`/admin/users/${id}/unblock`),
   promoteUser: (id, role) => api.post(`/admin/users/${id}/promote`, { role }),
   resetUserProgress: (id) => api.post(`/admin/users/${id}/reset`),
-  
-  // Questions
   getQuestions: (params) => api.get('/admin/questions', { params }),
   addQuestion: (data) => api.post('/admin/questions', data),
   updateQuestion: (id, data) => api.put(`/admin/questions/${id}`, data),
   deleteQuestion: (id) => api.delete(`/admin/questions/${id}`),
   bulkAddQuestions: (data) => api.post('/admin/questions/bulk', data),
-  
-  // Coding Questions
   getCodingQuestions: (params) => api.get('/admin/coding-questions', { params }),
   addCodingQuestion: (data) => api.post('/admin/coding-questions', data),
   updateCodingQuestion: (id, data) => api.put(`/admin/coding-questions/${id}`, data),
   deleteCodingQuestion: (id) => api.delete(`/admin/coding-questions/${id}`),
-  
-  // Company Questions
+  toggleDailyActive: (id) => api.patch(`/admin/coding-questions/${id}/set-daily`),
   getCompanyQuestions: (params) => api.get('/admin/company-questions', { params }),
   addCompany: (data) => api.post('/admin/company-questions', data),
   updateCompany: (id, data) => api.put(`/admin/company-questions/${id}`, data),
   deleteCompany: (id) => api.delete(`/admin/company-questions/${id}`),
-  
-  // Mock Tests
   getMockTests: (params) => api.get('/admin/mock-tests', { params }),
   addMockTest: (data) => api.post('/admin/mock-tests', data),
   updateMockTest: (id, data) => api.put(`/admin/mock-tests/${id}`, data),
   deleteMockTest: (id) => api.delete(`/admin/mock-tests/${id}`),
   toggleMockTest: (id) => api.post(`/admin/mock-tests/${id}/toggle`),
-
   getTestSubmissions: (testId) => api.get(`/mock-tests/${testId}/submissions`),
-
-  
-  // Leaderboard
   getLeaderboard: (params) => api.get('/admin/leaderboard', { params }),
   resetLeaderboard: () => api.post('/admin/leaderboard/reset'),
-  
-  // Analytics
   getAnalytics: (params) => api.get('/admin/analytics', { params }),
-  
-  // Submissions
   getSubmissions: (params) => api.get('/admin/submissions', { params }),
-  
-  // Settings
   getSettings: () => api.get('/admin/settings'),
-  updateSettings: (data) => api.put('/admin/settings', data),
+  updateSettings: (data) => api.put('/admin/settings', data)
 };
 
 export default api;

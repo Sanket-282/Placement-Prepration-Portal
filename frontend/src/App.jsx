@@ -1,49 +1,34 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import PageLoader from './components/ui/PageLoader';
 
 // Layouts
 import MainLayout from './components/layouts/MainLayout';
 import AuthLayout from './components/layouts/AuthLayout';
 import AdminLayout from './components/admin/AdminLayout';
 
-// Auth Pages
-import Login from './pages/auth/Login';
-import Signup from './pages/auth/Signup';
-import VerifyOTP from './pages/auth/VerifyOTP';
-import ForgotPassword from './pages/auth/ForgotPassword';
-
-// Main Pages
-import Dashboard from './pages/Dashboard';
-import Aptitude from './pages/aptitude/Aptitude';
-
-import Programming from './pages/programming/Programming';
-import ProgrammingTopic from './pages/programming/ProgrammingTopic';
-import ProgrammingDifficulty from './pages/programming/ProgrammingDifficulty';
-import ProgrammingQuestions from './pages/programming/ProgrammingQuestions';
-import ProgrammingSolve from './pages/programming/ProgrammingSolve';
-
-import Companies from './pages/companies/Companies';
-import MockTests from './pages/tests/MockTests';
-import TakeTest from './pages/tests/TakeTest';
-import Leaderboard from './pages/Leaderboard';
-import Bookmarks from './pages/Bookmarks';
-import Profile from './pages/Profile';
-import ResumeBuilder from './pages/ResumeBuilder';
-import DailyChallenge from './pages/DailyChallenge';
-
-// Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminQuestions from './pages/admin/AdminQuestions';
-import AdminCodingQuestions from './pages/admin/AdminCodingQuestions';
-import AdminCompanyQuestions from './pages/admin/AdminCompanyQuestions';
-import AdminMockTests from './pages/admin/AdminMockTests';
-import AdminLeaderboard from './pages/admin/AdminLeaderboard';
-
-import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminRoutes from './pages/admin/AdminRoutes';
-import AdminSettings from './pages/admin/AdminSettings';
+const Login = lazy(() => import('./pages/auth/Login'));
+const Signup = lazy(() => import('./pages/auth/Signup'));
+const VerifyOTP = lazy(() => import('./pages/auth/VerifyOTP'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Aptitude = lazy(() => import('./pages/aptitude/Aptitude'));
+const Programming = lazy(() => import('./pages/programming/Programming'));
+const ProgrammingTopic = lazy(() => import('./pages/programming/ProgrammingTopic'));
+const ProgrammingDifficulty = lazy(() => import('./pages/programming/ProgrammingDifficulty'));
+const ProgrammingQuestions = lazy(() => import('./pages/programming/ProgrammingQuestions'));
+const ProgrammingSolve = lazy(() => import('./pages/programming/ProgrammingSolve'));
+const Companies = lazy(() => import('./pages/companies/Companies'));
+const MockTests = lazy(() => import('./pages/tests/MockTests'));
+const TakeTest = lazy(() => import('./pages/tests/TakeTest'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const Bookmarks = lazy(() => import('./pages/Bookmarks'));
+const Profile = lazy(() => import('./pages/Profile'));
+const ResumeBuilder = lazy(() => import('./pages/ResumeBuilder'));
+const DailyChallenge = lazy(() => import('./pages/DailyChallenge'));
 
 
 // 🔥 Role-Based Redirect Component
@@ -51,11 +36,7 @@ const RoleBasedRedirect = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <PageLoader label="Checking your session..." />;
   }
 
   if (!user) {
@@ -71,7 +52,7 @@ const RoleBasedRedirect = () => {
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <PageLoader label="Loading your workspace..." />;
 
   if (!user) return <Navigate to="/login" replace />;
 
@@ -85,7 +66,7 @@ const ProtectedRoute = ({ children }) => {
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <PageLoader label="Loading admin workspace..." />;
 
   if (!user) return <Navigate to="/login" replace />;
 
@@ -99,8 +80,9 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <Routes>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
 
             {/* Public Routes */}
             <Route element={<AuthLayout />}>
@@ -149,8 +131,9 @@ function App() {
             {/* Catch-all */}
             <Route path="*" element={<RoleBasedRedirect />} />
 
-          </Routes>
-        </Router>
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
   );

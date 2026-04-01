@@ -38,12 +38,15 @@ const Login = () => {
 
     try {
       const result = await login(formData.email, null, formData.password);
+      console.log('Login result:', result);
       if (result.token) {
-        if (result.user && result.user.isAdmin) {
-          navigate('/admin');
+        if (result.user.isAdmin) {
+          navigate('/admin', { replace: true });
         } else {
-          navigate('/dashboard');
+          navigate('/dashboard', { replace: true });
         }
+      } else {
+        setError('Login successful but no token received. Please try again.');
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Login failed';

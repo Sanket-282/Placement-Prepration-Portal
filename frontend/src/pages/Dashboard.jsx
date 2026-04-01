@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { userAPI, leaderboardAPI } from '../services/api';
+import Card from '../components/ui/Card';
+import Loader from '../components/ui/Loader';
+import Button from '../components/ui/Button';
 import {
   Brain,
   Code,
@@ -26,29 +29,31 @@ const Dashboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
     try {
       const [statsRes, leaderboardRes] = await Promise.all([
         userAPI.getStats(),
         leaderboardAPI.getAll({ limit: 5 })
       ]);
 
-      if (statsRes.data.success) {
+      if (statsRes.data?.success) {
         setStats(statsRes.data.stats);
       }
-      if (leaderboardRes.data.success) {
-        setLeaderboard(leaderboardRes.data.leaderboard);
+      if (leaderboardRes.data?.success) {
+        setLeaderboard(leaderboardRes.data.leaderboard || []);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const statCards = [
     {
@@ -137,14 +142,7 @@ const Dashboard = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-          <p className="text-slate-500 dark:text-slate-400">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
+    return <Loader label="Loading your dashboard..." />;
   }
 
   return (
@@ -192,11 +190,7 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => (
-          <div 
-            key={index} 
-            className="card card-hover p-5 group"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
+          <Card key={index} hover className="p-5 group" style={{ animationDelay: `${index * 100}ms` }}>
             <div className="flex items-start justify-between mb-4">
               <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.iconBg} shadow-lg`}>
                 <stat.icon className="w-6 h-6 text-white" />
@@ -212,7 +206,7 @@ const Dashboard = () => {
             <div className="text-sm text-slate-500 dark:text-slate-400">
               {stat.label}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -228,11 +222,8 @@ const Dashboard = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {quickLinks.map((link, index) => (
-            <Link
-              key={index}
-              to={link.path}
-              className="group relative overflow-hidden card card-hover p-5"
-            >
+            <Link key={index} to={link.path} className="group relative overflow-hidden">
+              <Card hover className="p-5 h-full">
               {/* Gradient overlay on hover */}
               <div className={`absolute inset-0 bg-gradient-to-br ${link.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
               
@@ -250,6 +241,7 @@ const Dashboard = () => {
                 </div>
                 <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
               </div>
+              </Card>
             </Link>
           ))}
         </div>
@@ -258,7 +250,7 @@ const Dashboard = () => {
       {/* Bottom Section - Leaderboard & Progress */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Performers */}
-        <div className="card p-6">
+        <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600">
@@ -315,10 +307,10 @@ const Dashboard = () => {
               </div>
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Your Progress */}
-        <div className="card p-6">
+        <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500">
@@ -389,12 +381,12 @@ const Dashboard = () => {
                   <p className="text-xs text-slate-500 dark:text-slate-400">Keep it going!</p>
                 </div>
               </div>
-              <Link to="/daily-challenge" className="btn btn-sm btn-primary">
+              <Button as={Link} to="/daily-challenge" size="sm">
                 Daily Challenge
-              </Link>
+              </Button>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

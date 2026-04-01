@@ -14,7 +14,7 @@ const { protect, isAdmin } = require('../middleware/auth');
 
 // Public routes
 router.get('/', getCodingQuestions);
-router.get('/daily', protect, getDailyChallenge);
+router.get('/daily', getDailyChallenge);
 router.get('/:id', getCodingQuestion);
 
 // Protected routes

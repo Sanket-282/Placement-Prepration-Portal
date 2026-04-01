@@ -860,34 +860,38 @@ router.put('/coding-questions/:id', async (req, res) => {
 });
 
 // @desc    Delete coding question (Admin)
-// @route   DELETE /api/admin/coding-questions/:id
-router.delete('/coding-questions/:id', async (req, res) => {
-  try {
-    const question = await CodingQuestion.findByIdAndDelete(req.params.id);
+  // @route   DELETE /api/admin/coding-questions/:id
+  router.delete('/coding-questions/:id', async (req, res) => {
+    try {
+      const question = await CodingQuestion.findByIdAndDelete(req.params.id);
 
-    if (!question) {
-      return res.status(404).json({
+      if (!question) {
+        return res.status(404).json({
+          success: false,
+          message: 'Coding question not found'
+        });
+      }
+
+      // Delete related submissions
+      await Submission.deleteMany({ codingQuestion: req.params.id });
+
+      res.status(200).json({
+        success: true,
+        message: 'Coding question deleted successfully'
+      });
+    } catch (error) {
+      console.error('Delete coding question error:', error);
+      res.status(500).json({
         success: false,
-        message: 'Coding question not found'
+        message: 'Error deleting coding question',
+        error: error.message
       });
     }
+  });
 
-    // Delete related submissions
-    await Submission.deleteMany({ codingQuestion: req.params.id });
-
-    res.status(200).json({
-      success: true,
-      message: 'Coding question deleted successfully'
-    });
-  } catch (error) {
-    console.error('Delete coding question error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting coding question',
-      error: error.message
-    });
-  }
-});
+  // @desc    Toggle daily active status (Admin)
+  // @route   PATCH /api/admin/coding-questions/:id/set-daily
+  router.patch('/coding-questions/:id/set-daily', require('../controllers/codingController').toggleDailyActive);
 
 // ==================== COMPANY QUESTION MANAGEMENT ====================
 

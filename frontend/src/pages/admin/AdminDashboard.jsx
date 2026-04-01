@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { adminAPI } from '../../services/api';
+import Card from '../../components/ui/Card';
+import Loader from '../../components/ui/Loader';
 import {
   Users,
   FileQuestion,
@@ -47,11 +49,7 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
-      </div>
-    );
+    return <Loader label="Loading admin insights..." />;
   }
 
   const statCards = [
@@ -105,10 +103,7 @@ export default function AdminDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, index) => (
-          <div
-            key={index}
-            className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700"
-          >
+          <Card key={index} className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -125,14 +120,14 @@ export default function AdminDashboard() {
                 <stat.icon className="w-6 h-6 text-white" />
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* User Growth Chart */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+        <Card className="p-6">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
             User Signups (Last 30 Days)
           </h3>
@@ -151,10 +146,10 @@ export default function AdminDashboard() {
               />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </Card>
 
         {/* Submissions Chart */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+        <Card className="p-6">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
             Daily Submissions
           </h3>
@@ -167,13 +162,13 @@ export default function AdminDashboard() {
               <Bar dataKey="submissions" fill="#10B981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </Card>
       </div>
 
       {/* Second Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Category Distribution */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+        <Card className="p-6">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
             Question Categories
           </h3>
@@ -208,10 +203,10 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Top Users */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 lg:col-span-2">
+        <Card className="p-6 lg:col-span-2">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
             Top Performers
           </h3>
@@ -245,12 +240,12 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+        <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
               <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -264,9 +259,9 @@ export default function AdminDashboard() {
               </p>
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+        <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
               <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -280,9 +275,9 @@ export default function AdminDashboard() {
               </p>
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+        <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <Activity className="w-6 h-6 text-purple-600 dark:text-purple-400" />
@@ -296,7 +291,7 @@ export default function AdminDashboard() {
               </p>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

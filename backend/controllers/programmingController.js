@@ -3,9 +3,7 @@ const Submission = require('../models/Submission');
 const User = require('../models/User');
 
 // Judge0 API configuration
-const JUDGE0_API_URL = 'https://judge0-ce.p.rapidapi.com';
-const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
-const JUDGE0_HOST = process.env.JUDGE0_API_HOST || 'judge0-ce.p.rapidapi.com';
+const JUDGE0_API_URL = 'https://ce.judge0.com';
 
 const languageIds = {
   javascript: 63,
@@ -20,10 +18,8 @@ const languageIds = {
 const judge0Request = async (endpoint, method, body = null) => {
   const options = {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-RapidAPI-Key': JUDGE0_API_KEY,
-      'X-RapidAPI-Host': JUDGE0_HOST
+      headers: {
+      'Content-Type': 'application/json'
     }
   };
 
@@ -140,7 +136,7 @@ exports.getProgrammingQuestion = async (req, res) => {
 // @route   POST /api/programming/run
 exports.runCode = async (req, res) => {
   try {
-    const { language, sourceCode, input } = req.body;
+    const { language, sourceCode, input, stdin } = req.body;
 
     if (!language || !sourceCode) {
       return res.status(400).json({
@@ -157,10 +153,12 @@ exports.runCode = async (req, res) => {
       });
     }
 
+    const runtimeInput = input ?? stdin ?? '';
+
     const createResponse = await judge0Request('/submissions?base64_encoded=true&wait=true', 'POST', {
       source_code: Buffer.from(sourceCode).toString('base64'),
       language_id: languageId,
-      stdin: input ? Buffer.from(input).toString('base64') : '',
+      stdin: runtimeInput ? Buffer.from(runtimeInput).toString('base64') : '',
       cpu_time_limit: 2,
       memory_limit: 128000
     });
@@ -176,6 +174,7 @@ exports.runCode = async (req, res) => {
       output: finalOutput,
       stdout, stderr, compile_output,
       status: createResponse.status?.description,
+      statusDescription: createResponse.status?.description,
       time: createResponse.time,
       memory: createResponse.memory
     });
@@ -250,12 +249,21 @@ exports.submitCode = async (req, res) => {
       await ProgrammingQuestion.findByIdAndUpdate(questionId, { $inc: { totalSubmissions: 1 } });
     }
 
+    const normalizedResult = {
+      status: isSolved ? 'accepted' : 'wrong_answer',
+      passedTests,
+      totalTests: testCases.length,
+      score
+    };
+
     res.json({
       success: true,
       solved: isSolved,
       score,
       passedTests,
       totalTests: testCases.length,
+      output: isSolved ? 'All test cases passed successfully.' : `${passedTests}/${testCases.length} test cases passed.`,
+      result: normalizedResult,
       results
     });
   } catch (error) {

@@ -103,6 +103,10 @@ const codingQuestionSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isDailyActive: {
+    type: Boolean,
+    default: false
+  },
   totalSubmissions: {
     type: Number,
     default: 0
