@@ -2,68 +2,22 @@ const User = require('../models/User');
 const { sendEmail, emailTemplates } = require('../utils/emailSender');
 const otpGenerator = require('otp-generator');
 
-const normalizeSignupPayload = (payload = {}) => ({
-  name: `${payload.name ?? ''}`.trim(),
-  email: `${payload.email ?? ''}`.trim().toLowerCase(),
-  phone: `${payload.phone ?? ''}`.replace(/\D/g, '').trim(),
-  password: `${payload.password ?? ''}`,
-  userType: `${payload.userType ?? ''}`.trim()
-});
-
-const sendSignupOtp = async (user, otp) => {
-  await sendEmail({
-    to: user.email,
-    subject: 'Verify your Placement Portal Account',
-    message: emailTemplates.otpVerification(user.name, otp),
-    otp
-  });
-};
-
 // @desc    Register new user (Step 1 - initial registration)
 // @route   POST /api/auth/signup
 // @access  Public
 exports.signup = async (req, res) => {
   try {
-    const { name, email, phone, password, userType } = normalizeSignupPayload(req.body);
+    const { name, email, phone, password, userType } = req.body;
 
-    if (!name || !email || !phone || !password || !userType) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide name, email, phone, password, and user type'
-      });
-    }
-
-    const matchingUsers = await User.find({
+    // Check if user already exists
+    const existingUser = await User.findOne({ 
       $or: [{ email }, { phone }]
-    }).select('+otp +otpExpiry +password');
+    });
 
-    const verifiedUser = matchingUsers.find((user) => user.isVerified);
-    if (verifiedUser) {
+    if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'User with this email or phone already exists'
-      });
-    }
-
-    const pendingUser = matchingUsers[0];
-
-    if (pendingUser) {
-      pendingUser.name = name;
-      pendingUser.email = email;
-      pendingUser.phone = phone;
-      pendingUser.password = password;
-      pendingUser.userType = userType;
-      pendingUser.isVerified = false;
-      pendingUser.loginOTPVerified = false;
-      await pendingUser.save();
-
-      const otp = await pendingUser.generateOTP();
-      await sendSignupOtp(pendingUser, otp);
-
-      return res.status(200).json({
-        success: true,
-        message: 'Account already exists but is pending verification. A fresh OTP has been sent to your email.',
-        userId: pendingUser._id
       });
     }
 
@@ -81,7 +35,12 @@ exports.signup = async (req, res) => {
     const otp = await user.generateOTP();
 
     // Send OTP email
-    await sendSignupOtp(user, otp);
+    await sendEmail({
+      to: email,
+      subject: 'Verify your Placement Portal Account',
+      message: emailTemplates.otpVerification(name, otp),
+      otp: otp
+    });
 
     res.status(201).json({
       success: true,
@@ -104,13 +63,6 @@ exports.signup = async (req, res) => {
 exports.verifyOTP = async (req, res) => {
   try {
     const { userId, otp } = req.body;
-
-    if (!userId || !otp) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide user ID and OTP'
-      });
-    }
 
     const user = await User.findById(userId).select('+otp +otpExpiry');
 
@@ -179,13 +131,6 @@ exports.resendOTP = async (req, res) => {
   try {
     const { userId } = req.body;
 
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide user ID'
-      });
-    }
-
     const user = await User.findById(userId).select('+otp +otpExpiry');
 
     if (!user) {
@@ -209,8 +154,7 @@ exports.resendOTP = async (req, res) => {
     await sendEmail({
       to: user.email,
       subject: 'Your New OTP - Placement Portal',
-      message: emailTemplates.otpVerification(user.name, otp),
-      otp
+      message: emailTemplates.otpVerification(user.name, otp)
     });
 
     res.status(200).json({
@@ -467,10 +411,9 @@ exports.forgotPassword = async (req, res) => {
 
     // Generate reset OTP
     const resetOTP = otpGenerator.generate(6, {
-      digits: true,
-      lowerCaseAlphabets: false,
-      upperCaseAlphabets: false,
+      upperCase: true,
       specialChars: false,
+      alphabets: true
     });
     
     user.resetPasswordOTP = resetOTP.toUpperCase();
